@@ -63,8 +63,8 @@ for contdata=1:length(Term{1,1}.data)
         fprintf(fid,'];\n\n');
 
         %Set the LMI
-        expr = strcat('LMIs = LMIs + set(Matrix ',ineq);
-        expr = strcat(expr,' 0);\n\n');
+        expr = strcat('LMIs = [LMIs;  Matrix ',ineq);
+        expr = strcat(expr,' 0];\n\n');
         fprintf(fid,expr);
     else %An auxiliar variable is to be defined
         fprintf(fid,'\n%s{%s} = [',param,num2str(contdata));

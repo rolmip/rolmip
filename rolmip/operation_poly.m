@@ -64,20 +64,29 @@ end
 
 
 %Creating the hash table
+% numelem = 1;
+% vertnow = 0;
+% base = [];
+% for contsimplex=1:length(vertices)
+%     [tabexponents{contsimplex}] = generate_homogeneous_exponents(vertices(contsimplex),degree(contsimplex));
+%     
+%     if (degree(contsimplex) > 0)
+%         if (sum(degree) > 1)
+%             base = [base (sum(degree)*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
+%             vertnow = vertnow + vertices(contsimplex);
+%         else
+%             base = [base (2*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
+%             vertnow = vertnow + vertices(contsimplex);
+%         end
+%     end
+%     numelem = numelem*size(tabexponents{contsimplex},1);
+% end
+jump = 1;
 numelem = 1;
-vertnow = 0;
-base = [];
 for contsimplex=1:length(vertices)
     [tabexponents{contsimplex}] = generate_homogeneous_exponents(vertices(contsimplex),degree(contsimplex));
-    
-    if (degree(contsimplex) > 0)
-        if (sum(degree) > 1)
-            base = [base (sum(degree)*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
-            vertnow = vertnow + vertices(contsimplex);
-        else
-            base = [base (2*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
-            vertnow = vertnow + vertices(contsimplex);
-        end
+    if (contsimplex > 1)
+        jump(contsimplex) = numelem;
     end
     numelem = numelem*size(tabexponents{contsimplex},1);
 end
@@ -87,15 +96,15 @@ for conttotal=1:numelem
     vetexponent = [];
     for contsimplex=1:length(tabexponents)
         polyexponent{contsimplex} = tabexponents{contsimplex}(contexp(contsimplex),:);
-        if (sum(polyexponent{contsimplex}) > 0)
-            vetexponent = [vetexponent polyexponent{contsimplex}];
-        end
+%         if (sum(polyexponent{contsimplex}) > 0)
+%             vetexponent = [vetexponent polyexponent{contsimplex}];
+%         end
     end
-    indhash(conttotal) = sum(base.*vetexponent);
             
-    resul.data(conttotal).exponent = polyexponent;
-    resul.data(conttotal).value = 0;
-    resul.opcode{conttotal} = [];
+    indresul = gethash(polyexponent,tabexponents,jump);
+    resul.data(indresul).exponent = polyexponent;
+    resul.data(indresul).value = 0;
+    resul.opcode{indresul} = [];
     
     contexp(1) = contexp(1) + 1;
     aux = 1;
@@ -105,7 +114,6 @@ for conttotal=1:numelem
         aux = aux + 1;
     end
 end
-
 
 
 %Label '1' or '-1' and op '*' -> special case, does not appear
@@ -141,7 +149,7 @@ if (op == '*')
         for cont2=1:length(poly2.data)
             exponent = poly2.data(cont2).exponent;
             
-            indresul = gethash(exponent,indhash,base);
+            indresul = gethash(exponent,tabexponents,jump);
             
             resul.data(indresul).exponent = exponent;
             resul.data(indresul).value = resul.data(indresul).value + (poly1.data(1).value*poly2.data(cont2).value);
@@ -203,7 +211,7 @@ if (op == '*')
         for cont1=1:length(poly1.data)
             exponent = poly1.data(cont1).exponent;
             
-            indresul = gethash(exponent,indhash,base);
+            indresul = gethash(exponent,tabexponents,jump);
             
             resul.data(indresul).exponent = exponent;
             resul.data(indresul).value = resul.data(indresul).value + (poly1.data(cont1).value*poly2.data(1).value);
@@ -268,7 +276,7 @@ if (op == '*')
                     exponent{contsimplex} = poly1.data(cont1).exponent{contsimplex} + poly2.data(cont2).exponent{contsimplex};
                 end
                 
-                indresul = gethash(exponent,indhash,base);
+                indresul = gethash(exponent,tabexponents,jump);
                                 
                 resul.data(indresul).exponent = exponent;
                 resul.data(indresul).value = resul.data(indresul).value + (poly1.data(cont1).value*poly2.data(cont2).value);
@@ -333,12 +341,12 @@ end
 if ((op == '+') || (op == '-'))
     for cont=1:length(poly1.data)
         
-        indresul = gethash(poly1.data(cont).exponent,indhash,base);
+        indresul = gethash(poly1.data(cont).exponent,tabexponents,jump);
         
         resul.data(indresul).exponent = poly1.data(indresul).exponent;
         resul.data(indresul).value = resul.data(indresul).value + poly1.data(indresul).value;
         
-        indresul = gethash(poly2.data(cont).exponent,indhash,base);
+        indresul = gethash(poly2.data(cont).exponent,tabexponents,jump);
         
         if (op == '+')
             resul.data(indresul).value = resul.data(indresul).value + poly2.data(indresul).value;
@@ -355,13 +363,13 @@ resul.vertices = vertices;
 return
 
 
-function index = gethash(exponent,hash,base)
-vetexponent = [];
+function index = gethash(exponent,exptable,jump)
+index = 0;
 for contsimplex=1:(length(exponent)) 
-    if (sum(exponent{contsimplex}) > 0)
-        vetexponent = [vetexponent exponent{contsimplex}];
+    if (length(exptable{contsimplex}) > 0)
+        [i,j] = find(exptable{contsimplex} - repmat(exponent{contsimplex},size(exptable{contsimplex},1),1) == 0);
+        index = index + (find(histc(i,1:size(exptable{contsimplex},1)) == size(exptable{contsimplex},2)) - 1)*jump(contsimplex);
     end
 end
-
-index = find(sum(base.*(vetexponent))==hash);
+index = index + 1;
 return

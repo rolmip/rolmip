@@ -1,3 +1,4 @@
+- [Version 2.3:](https://github.com/rolmip/rolmip/releases/tag/2.3) Bug corrections.
 - [Version 2.2:](https://github.com/rolmip/rolmip/releases/tag/2.2) Bug corrections.
 - [Version 2.1:](https://github.com/rolmip/rolmip/releases/tag/2.1) Easier definitions for constant matrices using poly_struct; Adaptation of the LMI definitions to the newest YALMIP version (thanks to Hugo Tadashi); Bug corrections.
 - [Version 2.0:](https://github.com/rolmip/rolmip/releases/tag/2.0) Implementation of the multi-simplex structure; Insertion of the procedure affine2poly.m, to convert an affinely parameter-dependent polynomial into the multi-simplex structure.

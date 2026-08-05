@@ -204,56 +204,32 @@ else %If M is a cell array
         end
     else  %If the degree of each monomial is specified
         %Create the hash table
+        jump = 1;
         numelem = 1;
-        vertnow = 0;
-        base = [];
         for contsimplex=1:length(vertices)
             [exponents{contsimplex}] = generate_homogeneous_exponents(vertices(contsimplex),degree(contsimplex));
-            
-            if (degree(contsimplex) > 0)
-                if (sum(degree) > 1)
-                    base = [base (sum(degree)*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
-                    vertnow = vertnow + vertices(contsimplex);
-                else
-                    base = [base (2*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
-                    vertnow = vertnow + vertices(contsimplex);
-                end
+            if (contsimplex > 1)
+                jump(contsimplex) = numelem;
             end
             numelem = numelem*size(exponents{contsimplex},1);
         end
-        
-        contexp = ones(1,length(vertices)+1);
-        for conttotal=1:numelem
-            vetexponent = [];
-            for contsimplex=1:length(exponents)
-                polyexponent{contsimplex} = exponents{contsimplex}(contexp(contsimplex),:);
-                if (sum(polyexponent{contsimplex}) > 0)
-                    vetexponent = [vetexponent polyexponent{contsimplex}];
-                end
-            end
-            indhash(conttotal) = sum(base.*vetexponent);
-            
-            contexp(1) = contexp(1) + 1;
-            aux = 1;
-            while ((aux <= length(vertices)) && (contexp(aux) > size(exponents{aux},1)))
-                contexp(aux) = 1;
-                contexp(aux+1) = contexp(aux+1) + 1;
-                aux = aux + 1;
-            end
-        end
 
         for cont=1:length(M)
-            for contsimplex=1:(length(M{cont})-1)
-                if (sum(M{cont}{contsimplex}) == degree(contsimplex))
-                    exponent{contsimplex} = M{cont}{contsimplex};
-                else
-                    error('At least one exponent of the polynomial does not have the chosen degree');
-                    poly = [];
-                    return
+            if (length(vertices) ~= length(M{cont})-1)
+                error('The definition of the matrices does not correspond to the informed number of simplexes');
+            else
+                for contsimplex=1:(length(M{cont})-1)
+                    if (sum(M{cont}{contsimplex}) == degree(contsimplex))
+                        exponent{contsimplex} = M{cont}{contsimplex};
+                    else
+                        error('At least one exponent of the polynomial does not have the chosen degree');
+                        poly = [];
+                        return
+                    end
                 end
             end
             
-            indresul = gethash(exponent,indhash,base);
+            indresul = gethash(exponent,exponents,jump);
             poly.data(indresul).exponent = exponent;
             poly.data(indresul).value = M{cont}{length(M{cont})};
         end
@@ -267,7 +243,7 @@ else %If M is a cell array
                 exponent{contsimplex} = exponents{contsimplex}(contexp(contsimplex),:);
             end
             
-            indresul = gethash(exponent,indhash,base);
+            indresul = gethash(exponent,exponents,jump);
             if ((indresul > length(poly.data)) || (isempty(poly.data(indresul).value)))
                 poly.data(indresul).exponent = exponent;
                 poly.data(indresul).value = zeros(size(M{1}{length(M{1})}));
@@ -298,6 +274,12 @@ if (sum(sum(isnan(double(poly.data(1).value)))) > 0)
         end
     end
 else
+    if ((nargin == 2) && (iscell(M)))
+        if (length(M) > 1)
+            error('If the number of vertices and degrees are not specified, the input matrices must not contain the exponent information.');
+        end
+        M = M{1};
+    end
     if (scalar)
         poly.opcode{1} = strcat(poly.label,'#K1');
     elseif ((nargin == 2) && (sum(sum(M)) == 0))
@@ -323,13 +305,13 @@ rolmip('setvar',poly);
 return
 
 
-function index = gethash(exponent,hash,base)
-vetexponent = [];
+function index = gethash(exponent,exptable,jump)
+index = 0;
 for contsimplex=1:(length(exponent)) 
-    if (sum(exponent{contsimplex}) > 0)
-        vetexponent = [vetexponent exponent{contsimplex}];
+    if (length(exptable{contsimplex}) > 0)
+        [i,j] = find(exptable{contsimplex} - repmat(exponent{contsimplex},size(exptable{contsimplex},1),1) == 0);
+        index = index + (find(histc(i,1:size(exptable{contsimplex},1)) == size(exptable{contsimplex},2)) - 1)*jump(contsimplex);
     end
 end
-
-index = find(sum(base.*(vetexponent))==hash);
+index = index + 1;
 return

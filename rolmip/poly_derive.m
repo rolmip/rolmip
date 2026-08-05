@@ -73,7 +73,7 @@ for contsimplex=1:numsimplexes
     degree = [degree 1];
 end  
 
-[indhash,base] = create_hash_table(vertices,degree);
+[jump,exptable] = create_hash_table(vertices,degree);
 
 % Compose the polynomial structure of the derivative
 poly.label = labelout;
@@ -116,7 +116,7 @@ for cont=1:length(polyin.data)
                         end
                         finish = false;
                         while (~finish)
-                            indresul = gethash(exponents,indhash,base);
+                            indresul = gethash(exponents,exptable,jump);
                             if ((indresul > length(poly.data)) || (~isfield(poly.data(indresul),'value')) || (isempty(poly.data(indresul).value)))
                                 poly.data(indresul).value = 0;
                             end
@@ -141,6 +141,10 @@ for cont=1:length(polyin.data)
                             poly.opcodein{indresul} = strcat(poly.opcodein{indresul},polyin.opcode{cont});
                             
                             isok = false;
+                            if (isempty(indderivhomog))
+                                isok = true;
+                                finish = true;
+                            end
                             contderivhomog = 1;
                             while (~isok)
                                 exponents{indderivhomog(contderivhomog)} = circshift(exponents{indderivhomog(contderivhomog)},[0 1]);
@@ -163,83 +167,7 @@ for cont=1:length(polyin.data)
         end
     end
 end
-                
-                
-%                 
-%                 
-%                 
-%                 
-%                 
-%                 
-%                 
-%                 
-%                 
-%                 
-%                 
-%                 for contatual=1:length(exponents{contsimplex})
-%                     exponents{contsimplex}(contatual) = exponents{contsimplex}(contatual) + 1;
-%                     for contderiv=1:vertices(contsimplex+numsimplexes)
-%                     %for contderiv=1:vertices(contexp)%%%%%
-%                         %Homogenization procedure
-% 
-%                         finished = false;
-%                         while (~finished)
-%                             indresul = gethash(exponents,indhash,base);
-%                             if ((indresul > length(poly.data)) || (~isfield(poly.data(indresul),'value')) || (isempty(poly.data(indresul).value)))
-%                                 poly.data(indresul).value = 0;
-%                             end
-%                             poly.data(indresul).value = poly.data(indresul).value + val*H{contsimplex}(contexp,contderiv)*polyin.data(cont).value;
-%                             poly.data(indresul).exponent = exponents;
-%                             
-%                             %Update the opcode and opcodein
-%                             if ~((indresul > length(poly.opcodein)) || (isempty(poly.opcodein{indresul})))
-%                                 %If the opcodein already exists
-%                                 poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'+');
-%                             else
-%                                 poly.opcodein{indresul} = [];
-%                             end
-%                             if ((indresul > length(poly.opcode)) || (isempty(poly.opcode{indresul})))
-%                                 poly.opcode{indresul} = strcat(labelout,strcat('#D',num2str(indresul)));
-%                             end
-%                             if (val~=1)
-%                                 poly.opcodein{indresul} = strcat(strcat(poly.opcodein{indresul},num2str(val)),'*');
-%                             end
-%                             poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'H[');
-%                             poly.opcodein{indresul} = strcat(strcat(strcat(strcat(poly.opcodein{indresul},strcat(strcat(num2str(contexp),','),num2str(contderiv))),']#H'),num2str(contsimplex)),'*');
-%                             poly.opcodein{indresul} = strcat(poly.opcodein{indresul},polyin.opcode{cont});
-% 
-%                             ind = 1;
-%                             if (contsimplex == 1)
-%                                 ind = 2;
-%                             end
-%                             
-%                             if (numsimplexes > 1)
-%                                 exponents{numsimplexes + ind} = circshift(exponents{numsimplexes + ind},[0 1]);
-%                                 while ((ind <= numsimplexes) && (exponents{numsimplexes + ind}(1) == 1))
-%                                     ind = ind + 1;
-%                                     if (ind == contsimplex)
-%                                         ind = ind + 1;
-%                                     end
-%                                     if (ind <= numsimplexes)
-%                                         exponents{numsimplexes + ind} = circshift(exponents{numsimplexes + ind},[0 1]);
-%                                     end
-%                                 end
-%                             end
-% 
-%                             if (ind > numsimplexes)
-%                                 finished = true;
-%                             end
-%                         end
-% 
-%                         exponents{contsimplex+numsimplexes} = circshift(exponents{contsimplex+numsimplexes},[0 1]);
-%                     end
-%                     exponents{contsimplex}(contatual) = exponents{contsimplex}(contatual) - 1;
-%                 end
-%             end
-%         end
-%     end
-% end
-    
+                    
 rolmip('setvar',poly);
 varargout{1} = poly;
 
@@ -309,53 +237,74 @@ end
 
 return
 
-function [indhash,base] = create_hash_table(vertices,degree)
+%function [indhash,base] = create_hash_table(vertices,degree)
+function [jump,exptable] = create_hash_table(vertices,degree)
+jump = 1;
 numelem = 1;
-vertnow = 0;
-base = [];
 for contsimplex=1:length(vertices)
-    [exponents{contsimplex}] = generate_homogeneous_exponents(vertices(contsimplex),degree(contsimplex));
-    
-    if (degree(contsimplex) > 0)
-        if (sum(degree) > 1)
-            base = [base (sum(degree)*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
-            vertnow = vertnow + vertices(contsimplex);
-        else
-            base = [base (2*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
-            vertnow = vertnow + vertices(contsimplex);
-        end
+    [exptable{contsimplex}] = generate_homogeneous_exponents(vertices(contsimplex),degree(contsimplex));
+    if (contsimplex > 1)
+        jump(contsimplex) = numelem;
     end
-    numelem = numelem*size(exponents{contsimplex},1);
+    numelem = numelem*size(exptable{contsimplex},1);
 end
-
-contexp = ones(1,length(vertices)+1);
-for conttotal=1:numelem
-    vetexponent = [];
-    for contsimplex=1:length(exponents)
-        polyexponent{contsimplex} = exponents{contsimplex}(contexp(contsimplex),:);
-        if (sum(polyexponent{contsimplex}) > 0)
-            vetexponent = [vetexponent polyexponent{contsimplex}];
-        end
-    end
-    indhash(conttotal) = sum(base.*vetexponent);
-    
-    contexp(1) = contexp(1) + 1;
-    aux = 1;
-    while ((aux <= length(vertices)) && (contexp(aux) > size(exponents{aux},1)))
-        contexp(aux) = 1;
-        contexp(aux+1) = contexp(aux+1) + 1;
-        aux = aux + 1;
-    end
-end
+%         
+% numelem = 1;
+% vertnow = 0;
+% base = [];
+% for contsimplex=1:length(vertices)
+%     [exponents{contsimplex}] = generate_homogeneous_exponents(vertices(contsimplex),degree(contsimplex));
+%     
+%     if (degree(contsimplex) > 0)
+%         if (sum(degree) > 1)
+%             base = [base (sum(degree)*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
+%             vertnow = vertnow + vertices(contsimplex);
+%         else
+%             base = [base (2*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
+%             vertnow = vertnow + vertices(contsimplex);
+%         end
+%     end
+%     numelem = numelem*size(exponents{contsimplex},1);
+% end
+% 
+% contexp = ones(1,length(vertices)+1);
+% for conttotal=1:numelem
+%     vetexponent = [];
+%     for contsimplex=1:length(exponents)
+%         polyexponent{contsimplex} = exponents{contsimplex}(contexp(contsimplex),:);
+%         if (sum(polyexponent{contsimplex}) > 0)
+%             vetexponent = [vetexponent polyexponent{contsimplex}];
+%         end
+%     end
+%     indhash(conttotal) = sum(base.*vetexponent);
+%     
+%     contexp(1) = contexp(1) + 1;
+%     aux = 1;
+%     while ((aux <= length(vertices)) && (contexp(aux) > size(exponents{aux},1)))
+%         contexp(aux) = 1;
+%         contexp(aux+1) = contexp(aux+1) + 1;
+%         aux = aux + 1;
+%     end
+% end
 return
 
-function index = gethash(exponent,hash,base)
-vetexponent = [];
+function index = gethash(exponent,exptable,jump)
+index = 0;
 for contsimplex=1:(length(exponent)) 
-   if (sum(exponent{contsimplex}) > 0)
-        vetexponent = [vetexponent exponent{contsimplex}];
-   end
+    if (length(exptable{contsimplex}) > 0)
+        [i,j] = find(exptable{contsimplex} - repmat(exponent{contsimplex},size(exptable{contsimplex},1),1) == 0);
+        index = index + (find(histc(i,1:size(exptable{contsimplex},1)) == size(exptable{contsimplex},2)) - 1)*jump(contsimplex);
+    end
 end
-
-index = find(sum(base.*(vetexponent))==hash);
+index = index + 1;
 return
+% function index = gethash(exponent,hash,base)
+% vetexponent = [];
+% for contsimplex=1:(length(exponent)) 
+%    if (sum(exponent{contsimplex}) > 0)
+%         vetexponent = [vetexponent exponent{contsimplex}];
+%    end
+% end
+% 
+% index = find(sum(base.*(vetexponent))==hash);
+% return

@@ -29,13 +29,11 @@ elseif (nargin == 2)
     
     while ((conti <= size(Term,1)) && (contj <= size(Term,2)))
         if (~isempty(Term{conti,contj}))
-            if ((sum(vertices) == 0) || (length(Term{conti,contj}.vertices) > length(vertices)))
-                vertices = Term{conti,contj}.vertices;
-            end
+            vertices = check_vertices(Term{conti,contj},vertices);
             ind = find(vertices == 0);
             for cont=1:length(ind)
-                if (Term{conti,contj}.vertices(ind) ~= 0)
-                    vertices(ind) = Term{conti,contj}.vertices(ind);
+                if ((length(Term{conti,contj}.vertices) >= ind(cont)) && (Term{conti,contj}.vertices(ind(cont)) ~= 0))
+                    vertices(ind(cont)) = Term{conti,contj}.vertices(ind(cont));
                 end
             end
         end
@@ -196,7 +194,7 @@ end
 
 %Third step: construct the LMIs
 if (~isempty(ineq))
-    LMIs = set([]);
+    LMIs = [];
     
     for contdata=1:length(Term{1,1}.data)
         T = [];
@@ -209,13 +207,13 @@ if (~isempty(ineq))
         end
 
         if (strcmp(ineq,'>'))
-            LMIs = LMIs + set(T>0);
+            LMIs = [LMIs; T>0];
         elseif (strcmp(ineq,'<'))
-            LMIs = LMIs + set(T<0);
+            LMIs = [LMIs; T<0];
         elseif (strcmp(ineq,'>='))
-            LMIs = LMIs + set(T>=0);
+            LMIs = [LMIs; T>=0];
         elseif (strcmp(ineq,'<='))
-            LMIs = LMIs + set(T<=0);
+            LMIs = [LMIs; T<=0];
         end
     end
 elseif (strcmp(label,'Term'))
@@ -248,4 +246,39 @@ else
     rolmip('setvar',LMIs);
 end
 
+
+return
+
+
+
+function vertices = check_vertices(atual,vertices)
+%Function to verify and update the current number of vertices
+
+if (sum(vertices) == 0)
+    vertices = atual.vertices;
+else
+    if (length(vertices) > length(atual.vertices))
+        ind = find(vertices(1:length(atual.vertices)) == 0);
+        vertices(ind) = atual.vertices(ind);
+        
+        ind = find(vertices(1:length(atual.vertices)).*(atual.vertices) ~= 0);
+        if (sum(abs(vertices(ind) - atual.vertices(ind))) ~= 0)
+            %Error: different number of vertices!!!!!
+            error('The number of vertices of the defined simplexes must always be the same!');
+        end
+    else
+        ind = find(vertices == 0);
+        vertices(ind) = atual.vertices(ind);
+        if (length(vertices) < length(atual.vertices))
+            vertices = [vertices atual.vertices(length(vertices)+1:end)];
+        end
+        
+        ind = find(vertices.*atual.vertices ~= 0);
+        if (sum(abs(vertices(ind) - atual.vertices(ind))) ~= 0)
+            %Error: different number of vertices!!!!!
+            error('The number of vertices of the defined simplexes must always be the same!');
+        end
+    end
+end
+    
 return

@@ -91,9 +91,7 @@ while (contexpr <= length(expr))
                     
                 
         [atual] = parser_poly(auxexpr,vertices);
-        if ((sum(vertices) == 0) || (length(atual.vertices) > length(vertices)))
-            vertices = atual.vertices;
-        end
+        vertices = check_vertices(atual,vertices);
         atual.label = strcat('(',atual.label);
         atual.label = strcat(atual.label,')');
         for contcode=1:length(atual.data)
@@ -132,9 +130,7 @@ while (contexpr <= length(expr))
         
         %Set the number of vertices, if it is not yet set.
         atual = rolmip('getvar',labelatual);
-        if ((sum(vertices) == 0) || (length(atual.vertices) > length(vertices)))
-            vertices = atual.vertices;
-        end
+        vertices = check_vertices(atual,vertices);
         
         if (trans) %If it is transpose
             for conttrans=1:length(atual.data)
@@ -183,16 +179,14 @@ while (contexpr <= length(expr))
                 auxexpr(end) = [];
 
                 [poly2] = parser_poly(auxexpr,vertices);
-                if ((sum(vertices) == 0) || (length(atual.vertices) > length(vertices)))
-                    vertices = poly2.vertices;
-                end
+                vertices = check_vertices(poly2,vertices);
                 poly2.label = strcat('(',poly2.label);
                 poly2.label = strcat(poly2.label,')');
                 for contcode=1:length(poly2.data)
                     poly2.opcode{contcode} = strcat('(',strcat(poly2.opcode{contcode},')'));
                 end
                 if ((contexpr<=length(expr)) && (expr(contexpr)==char(39))) %transpose
-                    for conttrans = 1:length(atual.data)
+                    for conttrans = 1:length(poly2.data)
                         poly2.data(conttrans).value = (poly2.data(conttrans).value)'; 
                     end
                     poly2.label = strcat(poly2.label,char(39));
@@ -215,9 +209,7 @@ while (contexpr <= length(expr))
                 
                 %Set the number of vertices, if it is not yet set.
                 poly2 = rolmip('getvar',label2);
-                if ((sum(vertices) == 0) || (length(atual.vertices) > length(vertices)))
-                    vertices = poly2.vertices;
-                end
+                vertices = check_vertices(poly2,vertices);
                 
                 if (trans)
                     for conttrans=1:length(poly2.data)
@@ -312,4 +304,38 @@ end
 
 rolmip('setvar',resul);
 
+return
+
+
+
+function vertices = check_vertices(atual,vertices)
+%Function to verify and update the current number of vertices
+
+if (sum(vertices) == 0)
+    vertices = atual.vertices;
+else
+    if (length(vertices) > length(atual.vertices))
+        ind = find(vertices(1:length(atual.vertices)) == 0);
+        vertices(ind) = atual.vertices(ind);
+        
+        ind = find(vertices(1:length(atual.vertices)).*(atual.vertices) ~= 0);
+        if (sum(abs(vertices(ind) - atual.vertices(ind))) ~= 0)
+            %Error: different number of vertices!!!!!
+            error('The number of vertices of the defined simplexes must always be the same!');
+        end
+    else
+        ind = find(vertices == 0);
+        vertices(ind) = atual.vertices(ind);
+        if (length(vertices) < length(atual.vertices))
+            vertices = [vertices atual.vertices(length(vertices)+1:end)];
+        end
+        
+        ind = find(vertices.*atual.vertices ~= 0);
+        if (sum(abs(vertices(ind) - atual.vertices(ind))) ~= 0)
+            %Error: different number of vertices!!!!!
+            error('The number of vertices of the defined simplexes must always be the same!');
+        end
+    end
+end
+    
 return
