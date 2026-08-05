@@ -84,23 +84,38 @@ poly.opcodein = [];
 for cont=1:length(polyin.data)
     exporig = polyin.data(cont).exponent;
     for aux=numsimplexes+1:2*numsimplexes
-        exporig{aux} = [1 zeros(1,vertices(aux)-1)];
+        %exporig{aux} = [1 zeros(1,vertices(aux)-1)];
+        exporig{aux} = zeros(1,vertices(aux));
     end
     for contsimplex=1:numsimplexes
         expnow = exporig{contsimplex};
         for contexp=1:length(expnow)
+            %Derivate the simplex variable related to contexp
             if (expnow(contexp) > 0)
                 exponents = exporig;
                 val = exponents{contsimplex}(contexp);
                 
                 exponents{contsimplex}(contexp) = exponents{contsimplex}(contexp) - 1;
+                %Applying the derivative on the simplex variable related to
+                %exponents{contsimplex}(contexp)
+                
+                %First step: Homogeneize the current simplex variable
                 for contatual=1:length(exponents{contsimplex})
                     exponents{contsimplex}(contatual) = exponents{contsimplex}(contatual) + 1;
-                    for contderiv=1:vertices(contexp)
-                        %Homogenization procedure
-
-                        finished = false;
-                        while (~finished)
+                    indderiv = contsimplex + numsimplexes; %index of the derivative simplex
+                    for contderiv=1:length(exponents{indderiv})
+                        exponents{indderiv}(contderiv) = 1;
+                        %Second step: Homogeneize on all the derivative
+                        %simplexes, except the current derivative
+                        indderivhomog = numsimplexes+1:2*numsimplexes;
+                        indderivhomog(contsimplex) = [];
+                        
+                        for contderivhomog=1:length(indderivhomog)
+                            %Prepare the exponents
+                            exponents{indderivhomog(contderivhomog)}(1) = 1;
+                        end
+                        finish = false;
+                        while (~finish)
                             indresul = gethash(exponents,indhash,base);
                             if ((indresul > length(poly.data)) || (~isfield(poly.data(indresul),'value')) || (isempty(poly.data(indresul).value)))
                                 poly.data(indresul).value = 0;
@@ -108,7 +123,7 @@ for cont=1:length(polyin.data)
                             poly.data(indresul).value = poly.data(indresul).value + val*H{contsimplex}(contexp,contderiv)*polyin.data(cont).value;
                             poly.data(indresul).exponent = exponents;
                             
-                            %Update the opcode and opcodein
+                             %Update the opcode and opcodein
                             if ~((indresul > length(poly.opcodein)) || (isempty(poly.opcodein{indresul})))
                                 %If the opcodein already exists
                                 poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'+');
@@ -124,31 +139,23 @@ for cont=1:length(polyin.data)
                             poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'H[');
                             poly.opcodein{indresul} = strcat(strcat(strcat(strcat(poly.opcodein{indresul},strcat(strcat(num2str(contexp),','),num2str(contderiv))),']#H'),num2str(contsimplex)),'*');
                             poly.opcodein{indresul} = strcat(poly.opcodein{indresul},polyin.opcode{cont});
-
-                            ind = 1;
-                            if (contsimplex == 1)
-                                ind = 2;
-                            end
                             
-                            if (numsimplexes > 1)
-                                exponents{numsimplexes + ind} = circshift(exponents{numsimplexes + ind},[0 1]);
-                                while ((ind <= numsimplexes) && (exponents{numsimplexes + ind}(1) == 1))
-                                    ind = ind + 1;
-                                    if (ind == contsimplex)
-                                        ind = ind + 1;
+                            isok = false;
+                            contderivhomog = 1;
+                            while (~isok)
+                                exponents{indderivhomog(contderivhomog)} = circshift(exponents{indderivhomog(contderivhomog)},[0 1]);
+                                if (exponents{indderivhomog(contderivhomog)}(1) == 1)
+                                    contderivhomog = contderivhomog + 1;
+                                    if (contderivhomog > length(indderivhomog))
+                                        isok = true;
+                                        finish = true; %Finished the homogenization
                                     end
-                                    if (ind <= numsimplexes)
-                                        exponents{numsimplexes + ind} = circshift(exponents{numsimplexes + ind},[0 1]);
-                                    end
+                                else
+                                    isok = true;
                                 end
                             end
-
-                            if (ind > numsimplexes)
-                                finished = true;
-                            end
-                        end
-
-                        exponents{contsimplex+numsimplexes} = circshift(exponents{contsimplex+numsimplexes},[0 1]);
+                        end 
+                        exponents{indderiv}(contderiv) = 0;
                     end
                     exponents{contsimplex}(contatual) = exponents{contsimplex}(contatual) - 1;
                 end
@@ -156,6 +163,82 @@ for cont=1:length(polyin.data)
         end
     end
 end
+                
+                
+%                 
+%                 
+%                 
+%                 
+%                 
+%                 
+%                 
+%                 
+%                 
+%                 
+%                 
+%                 for contatual=1:length(exponents{contsimplex})
+%                     exponents{contsimplex}(contatual) = exponents{contsimplex}(contatual) + 1;
+%                     for contderiv=1:vertices(contsimplex+numsimplexes)
+%                     %for contderiv=1:vertices(contexp)%%%%%
+%                         %Homogenization procedure
+% 
+%                         finished = false;
+%                         while (~finished)
+%                             indresul = gethash(exponents,indhash,base);
+%                             if ((indresul > length(poly.data)) || (~isfield(poly.data(indresul),'value')) || (isempty(poly.data(indresul).value)))
+%                                 poly.data(indresul).value = 0;
+%                             end
+%                             poly.data(indresul).value = poly.data(indresul).value + val*H{contsimplex}(contexp,contderiv)*polyin.data(cont).value;
+%                             poly.data(indresul).exponent = exponents;
+%                             
+%                             %Update the opcode and opcodein
+%                             if ~((indresul > length(poly.opcodein)) || (isempty(poly.opcodein{indresul})))
+%                                 %If the opcodein already exists
+%                                 poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'+');
+%                             else
+%                                 poly.opcodein{indresul} = [];
+%                             end
+%                             if ((indresul > length(poly.opcode)) || (isempty(poly.opcode{indresul})))
+%                                 poly.opcode{indresul} = strcat(labelout,strcat('#D',num2str(indresul)));
+%                             end
+%                             if (val~=1)
+%                                 poly.opcodein{indresul} = strcat(strcat(poly.opcodein{indresul},num2str(val)),'*');
+%                             end
+%                             poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'H[');
+%                             poly.opcodein{indresul} = strcat(strcat(strcat(strcat(poly.opcodein{indresul},strcat(strcat(num2str(contexp),','),num2str(contderiv))),']#H'),num2str(contsimplex)),'*');
+%                             poly.opcodein{indresul} = strcat(poly.opcodein{indresul},polyin.opcode{cont});
+% 
+%                             ind = 1;
+%                             if (contsimplex == 1)
+%                                 ind = 2;
+%                             end
+%                             
+%                             if (numsimplexes > 1)
+%                                 exponents{numsimplexes + ind} = circshift(exponents{numsimplexes + ind},[0 1]);
+%                                 while ((ind <= numsimplexes) && (exponents{numsimplexes + ind}(1) == 1))
+%                                     ind = ind + 1;
+%                                     if (ind == contsimplex)
+%                                         ind = ind + 1;
+%                                     end
+%                                     if (ind <= numsimplexes)
+%                                         exponents{numsimplexes + ind} = circshift(exponents{numsimplexes + ind},[0 1]);
+%                                     end
+%                                 end
+%                             end
+% 
+%                             if (ind > numsimplexes)
+%                                 finished = true;
+%                             end
+%                         end
+% 
+%                         exponents{contsimplex+numsimplexes} = circshift(exponents{contsimplex+numsimplexes},[0 1]);
+%                     end
+%                     exponents{contsimplex}(contatual) = exponents{contsimplex}(contatual) - 1;
+%                 end
+%             end
+%         end
+%     end
+% end
     
 rolmip('setvar',poly);
 varargout{1} = poly;
@@ -211,7 +294,7 @@ for i=1:N
             count=0;
             for r=1:size(H,2);
                 v=H(:,r);
-                if v-col == zeros(N,1);
+                if roundn(v-col,-8) == zeros(N,1);
                     count=count+1;
                 end
             end
