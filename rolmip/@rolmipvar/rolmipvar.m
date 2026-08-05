@@ -39,7 +39,7 @@ function poly = rolmipvar(varargin)
 % already converted to simplex representation (each parameter generates a
 % different simplex), for a variable set M, with a given label and the
 % known bounds. In this case, the input M must be a cell array variable, each
-% cell containing a monomial. For instance, if the polinomial is equal to
+% cell containing a monomial. For instance, if the polynomial is equal to
 % A(p) = A0 + A1*p1 + A2*p2^2, matrix M is defined as
 % M{1} = {[0 0],A0}; M{2} = {[1 0],A1}; M{2} = {[0 2],A2};
 %
@@ -80,10 +80,13 @@ elseif (nargin == 2)
 elseif (nargin == 3) 
     M = varargin{1};
     if (isstr(varargin{3}))
-        if (length(M) > 1)
+        if ((length(M) > 1) && (strcmp(varargin{3},'scalar')))
             error('The first input argument should be a scalar');
             poly = [];
             return
+        elseif ((length(M) > 1) && ~(strcmp(varargin{3},'scalar')))
+            error('Invalid third argument');
+            poly = [];
         end
         label = varargin{2};
         vertices = 0;
@@ -394,7 +397,9 @@ else
                     end
                 end
                 
-                indresul = gethash(exponent,exponents,jump);
+                
+                indresul = gethash(exponent,exponents,jump);                                
+                %indresul = gethash2(exponent,exponents,jump);                              
                 poly.data(indresul).exponent = exponent;
                 poly.data(indresul).value = M{cont}{length(M{cont})};
             end
@@ -471,7 +476,7 @@ end
 
 return
 
-
+%__________________________________________________________________________
 function index = gethash(exponent,exptable,jump)
 index = 0;
 for contsimplex=1:(length(exponent)) 
@@ -481,4 +486,24 @@ for contsimplex=1:(length(exponent))
     end
 end
 index = index + 1;
+return
+
+%__________________________________________________________________________
+function index = gethash2(exponent,exptable,jump)
+
+index = 0;
+total = 0;
+for contsimplex=1:length(exponent) 
+    if (length(exptable{contsimplex}) > 0)
+        total=total+length(exptable{contsimplex});
+        vec = exponent{contsimplex};
+        for i=1:size(vec,2)-1
+            s=sum(vec(1,1:i));
+            if s+(i-1) >= i
+                index = index + nchoosek(s+(i-1),i);
+            end
+        end
+    end
+end
+index=total-index;
 return

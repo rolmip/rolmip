@@ -40,6 +40,33 @@ else
         end
     end
 end
+
+%Deal with bounds
+boundsaux{1} = []; boundsaux{2} = [];
+qtd = 0;
+if ((find(strcmp(fieldnames(poly1),'bounds'))) && (~isempty(poly1.bounds)))
+    %poly1 has bounds
+    boundsaux{1} = poly1.bounds;
+    qtd = qtd + 1;
+end
+if ((find(strcmp(fieldnames(poly2),'bounds')))  && (~isempty(poly2.bounds)))
+    %poly2 has bounds
+    boundsaux{2} = poly2.bounds;
+    qtd = qtd + 1;
+end
+if (qtd >= 1)
+    [aux,ind] = sort([size(boundsaux{1},1) size(boundsaux{2},1)]);
+    if (qtd == 1)
+        resul.bounds = boundsaux{ind(2)};
+    else
+        if (sum(sum(abs(boundsaux{ind(2)}(1:size(boundsaux{ind(1)},1),:) - boundsaux{ind(1)}))) ~= 0)
+            error('The bounds of both polynomials are different');
+        end
+        resul.bounds = boundsaux{ind(2)};
+    end
+end
+    
+
    
 if (op == '*')
     if (length(poly1.data) == 1) %If poly1 is a constant

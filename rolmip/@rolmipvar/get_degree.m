@@ -1,4 +1,4 @@
-degree = get_degree(X)
+function degree = get_degree(X)
 %  METHOD: get_degree
 %
 % Author: Alexandre Felipe
@@ -6,4 +6,4 @@ degree = get_degree(X)
 %
 % Return the degree of the polynomial.
 
-  degree = cellfun(@sum,X.data(1).exponent)
+  degree = cellfun(@sum,X.data(1).exponent);
