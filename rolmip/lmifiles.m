@@ -76,8 +76,12 @@ if (strcmp(action,'insert') || strcmp(action,'i'))
         vertices = 0;
         conti = 1;
         contj = 1;
-        while (vertices == 0)
-            vertices = Term{conti,contj}.vertices;
+        while ((vertices == 0) && (conti <= size(Term,1)) && (contj <= size(Term,2)))
+            if (~isempty(Term{conti,contj}))
+                vertices = Term{conti,contj}.vertices;
+            else
+                vertices = 0;
+            end
             contj = contj + 1;
             if (contj > size(Term,2))
                 conti = conti + 1;
@@ -92,8 +96,12 @@ if (strcmp(action,'insert') || strcmp(action,'i'))
         vertices = 0;
         conti = 1;
         contj = 1;
-        while (vertices == 0)
-            vertices = Term{conti,contj}.vertices;
+        while ((vertices == 0) && (conti <= size(Term,1)) && (contj <= size(Term,2)))
+            if (~isempty(Term{conti,contj}))
+                vertices = Term{conti,contj}.vertices;
+            else
+                vertices = 0;
+            end
             contj = contj + 1;
             if (contj > size(Term,2))
                 conti = conti + 1;

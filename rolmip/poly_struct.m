@@ -76,7 +76,11 @@ end
 
 if (nargin >= 5)
     %Define the variable
-    numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
+    if (vertices > 0)
+        numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
+    else
+        numcoefs = 1;
+    end
     for cont=1:numcoefs
         M{cont} = sdpvar(rows,cols,parametr);
     end
@@ -90,20 +94,57 @@ end
 poly.label = label;
 poly.vertices = vertices;
 if (degree > 0) %Not a constant
-    if (iscell(M))
-        [exponents] = generate_homogenous_exponents(vertices,degree);
-        for cont=1:size(exponents,1)
-            poly.data(cont).exponent = exponents(cont,:);
-            poly.data(cont).value = M{cont};
-        end
-    else
+    numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
+    if (~iscell(M))
         [order,tam] = size(M);
-        numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
         tam = tam/numcoefs;
-        [exponents] = generate_homogenous_exponents(vertices,degree);
+        [exponents] = generate_homogeneous_exponents(vertices,degree);
         for cont=1:size(exponents,1)
             poly.data(cont).exponent = exponents(cont,:);
             poly.data(cont).value = M(:,(cont-1)*tam+1:cont*tam);
+        end
+    else
+        if (iscell(M{1}))
+            [exponents] = generate_homogeneous_exponents(vertices,degree);
+            for cont=1:length(M)
+                if (sum(M{cont}{1}) == degree)
+                    poly.data(cont).exponent = M{cont}{1};
+                    poly.data(cont).value = M{cont}{2};
+                    
+                    contexp = 1;
+                    ind = 1:size(exponents,1);
+                    while ((contexp <= size(exponents,2)) && (sum(isnan(ind)) < length(ind)-1))
+                        aux = find(~isnan(ind));
+                        indtakeoff = find(exponents(aux,contexp)~=M{cont}{1}(contexp));
+                        ind(indtakeoff) = nan;
+                        contexp = contexp + 1;
+                    end
+                    exponents(find(~isnan(ind)),:) = [];
+                else
+                    error('At least one exponent of the polynomial does not have the chosen degree');
+                    poly = [];
+                    return
+                end
+            end
+            contpoly = length(poly.data) + 1;
+            for cont=1:size(exponents,1)
+                poly.data(contpoly).exponent = exponents(cont,:);
+                poly.data(contpoly).value = zeros(size(M{1}{2}));
+                contpoly = contpoly + 1;
+            end
+                
+        else
+            if (length(M) ~= numcoefs)
+                error('Invalid number of monomials entered');
+                poly = [];
+                return
+            else
+                [exponents] = generate_homogeneous_exponents(vertices,degree);
+                for cont=1:size(exponents,1)
+                    poly.data(cont).exponent = exponents(cont,:);
+                    poly.data(cont).value = M{cont};
+                end
+            end
         end
     end
 else %Constant

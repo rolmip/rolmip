@@ -26,8 +26,12 @@ elseif (nargin == 2)
     vertices = 0;
     conti = 1;
     contj = 1;
-    while (vertices == 0)
-        vertices = Term{conti,contj}.vertices;
+    while ((vertices == 0) && (conti <= size(Term,1)) && (contj <= size(Term,2)))
+        if (~isempty(Term{conti,contj}))
+            vertices = Term{conti,contj}.vertices;
+        else
+            vertices = 0;
+        end
         contj = contj + 1;
         if (contj > size(Term,2))
             conti = conti + 1;
@@ -99,16 +103,18 @@ if (shape == 1)
     end
     maxdeg = max(max(deg));
 
-    %one = sum_{i=1}^{vertices} alpha_i = 1
-    one = poly_struct(ones(1,vertices),'1',vertices,1);
-
-    %Second step: Make the polynomials homogeneous to the highest degree
-    for conti=1:size(Term,1)
-        for contj = conti:size(Term,2)
-            contdeg = deg(conti,contj);
-            while (contdeg < maxdeg)
-                Term{conti,contj} = operation_poly(Term{conti,contj},one,'*');
-                contdeg = contdeg + 1;
+    if (vertices > 0)
+        %one = sum_{i=1}^{vertices} alpha_i = 1
+        one = poly_struct(ones(1,vertices),'1',vertices,1);
+        
+        %Second step: Make the polynomials homogeneous to the highest degree
+        for conti=1:size(Term,1)
+            for contj = conti:size(Term,2)
+                contdeg = deg(conti,contj);
+                while (contdeg < maxdeg)
+                    Term{conti,contj} = operation_poly(Term{conti,contj},one,'*');
+                    contdeg = contdeg + 1;
+                end
             end
         end
     end
@@ -138,16 +144,18 @@ else %Rectangular or full square
     end
     maxdeg = max(max(deg));
 
-    %one = sum_{i=1}^{vertices} alpha_i = 1
-    one = poly_struct(ones(1,vertices),'1',vertices,1);
-
-    %Second step: Make the polynomials homogeneous to the highest degree
-    for conti=1:size(Term,1)
-        for contj = 1:size(Term,2)
-            contdeg = deg(conti,contj);
-            while (contdeg < maxdeg)
-                Term{conti,contj} = operation_poly(Term{conti,contj},one,'*');
-                contdeg = contdeg + 1;
+    if (vertices > 0)
+        %one = sum_{i=1}^{vertices} alpha_i = 1
+        one = poly_struct(ones(1,vertices),'1',vertices,1);
+        
+        %Second step: Make the polynomials homogeneous to the highest degree
+        for conti=1:size(Term,1)
+            for contj = 1:size(Term,2)
+                contdeg = deg(conti,contj);
+                while (contdeg < maxdeg)
+                    Term{conti,contj} = operation_poly(Term{conti,contj},one,'*');
+                    contdeg = contdeg + 1;
+                end
             end
         end
     end

@@ -53,17 +53,7 @@ elseif (nargin == 1)
     vecpoly = rolmip('getvar');
     vertices = 0;
     newlabel = [];
-end
-
-cont = 1;
-while (vertices == 0)
-    if (~isempty(vecpoly{cont}))
-        vertices = vecpoly{cont}.vertices;
-    end
-    cont = cont + 1;
-end
-    
-        
+end        
 
 %Taking off the space chars
 ind = find(expr==' ');
@@ -100,7 +90,11 @@ while (contexpr <= length(expr))
         auxexpr(end) = [];
                     
                 
-        [atual] = parser_poly(auxexpr,vecpoly,vertices);
+        %[atual] = parser_poly(auxexpr,vecpoly,vertices);
+        [atual] = parser_poly(auxexpr,vertices);
+        if (vertices == 0)
+            vertices = atual.vertices;
+        end
         atual.label = strcat('(',atual.label);
         atual.label = strcat(atual.label,')');
         for contcode=1:length(atual.data)
@@ -136,33 +130,32 @@ while (contexpr <= length(expr))
             end
             contexpr = contexpr + 1;
         end
-        indpol = 0;
-        contpol = 1;
-        while (indpol==0)
-            if ((length(vecpoly{contpol}) > 0) && (strcmp(vecpoly{contpol}.label,labelatual)))
-                atual = vecpoly{contpol};
-                if (trans) %If it is transpose
-                    for conttrans=1:length(atual.data)
-                        atual.data(conttrans).value = (atual.data(conttrans).value)';
-                    end
-                    atual.label = strcat(atual.label,char(39));
-                    for contcode=1:length(atual.data)
-                        atual.opcode{contcode} = strcat(atual.opcode{contcode},char(39));
-                    end
-                end
-                if (subtr) %If the first char is '-'
-                    for conttrans=1:length(atual.data)
-                        atual.data(conttrans).value = -atual.data(conttrans).value;
-                    end
-                    atual.label = strcat('-',atual.label);
-                    for contcode=1:length(atual.data)
-                        atual.opcode{contcode} = strcat('-',atual.opcode{contcode});
-                    end
-                end
-                indpol = contpol;
-            end
-            contpol = contpol + 1;
+        
+        %Set the number of vertices, if it is not yet set.
+        atual = rolmip('getvar',labelatual);
+        if (vertices == 0)
+            vertices = atual.vertices;
         end
+        
+        if (trans) %If it is transpose
+            for conttrans=1:length(atual.data)
+                atual.data(conttrans).value = (atual.data(conttrans).value)';
+            end
+            atual.label = strcat(atual.label,char(39));
+            for contcode=1:length(atual.data)
+                atual.opcode{contcode} = strcat(atual.opcode{contcode},char(39));
+            end
+        end
+        if (subtr) %If the first char is '-'
+            for conttrans=1:length(atual.data)
+                atual.data(conttrans).value = -atual.data(conttrans).value;
+            end
+            atual.label = strcat('-',atual.label);
+            for contcode=1:length(atual.data)
+                atual.opcode{contcode} = strcat('-',atual.opcode{contcode});
+            end
+        end
+        
     end
     %Get the remaining variables of a product of variables, apply the
     %product and store the value into a stack.
@@ -190,7 +183,11 @@ while (contexpr <= length(expr))
                 end
                 auxexpr(end) = [];
 
-                [poly2] = parser_poly(auxexpr,vecpoly,vertices);
+                %[poly2] = parser_poly(auxexpr,vecpoly,vertices);
+                [poly2] = parser_poly(auxexpr,vertices);
+                if (vertices == 0)
+                    vertices = poly2.vertices;
+                end
                 poly2.label = strcat('(',poly2.label);
                 poly2.label = strcat(poly2.label,')');
                 for contcode=1:length(poly2.data)
@@ -198,9 +195,9 @@ while (contexpr <= length(expr))
                 end
                 if ((contexpr<=length(expr)) && (expr(contexpr)==char(39))) %transpose
                     for conttrans = 1:length(atual.data)
-                        atual.data(conttrans).value = (atual.data(conttrans).value)';
+                        poly2.data(conttrans).value = (poly2.data(conttrans).value)'; %%%%%??????
                     end
-                    atual.label = strcat(atual.label,char(39));
+                    poly2.label = strcat(poly2.label,char(39));
                     for contcode=1:length(poly2.data)
                         poly2.opcode{contcode} = strcat(poly2.opcode{contcode},char(39));
                     end
@@ -217,24 +214,23 @@ while (contexpr <= length(expr))
                     end
                     contexpr = contexpr + 1;
                 end
-                indpol = 0;
-                contpol = 1;
-                while (indpol==0)
-                    if ((length(vecpoly{contpol}) > 0 ) && (strcmp(vecpoly{contpol}.label,label2)))
-                        poly2 = vecpoly{contpol};
-                        if (trans)
-                            for conttrans=1:length(poly2.data)
-                                poly2.data(conttrans).value = (poly2.data(conttrans).value)';
-                            end
-                            poly2.label = strcat(poly2.label,char(39));
-                            for contcode=1:length(poly2.data)
-                                poly2.opcode{contcode} = strcat(poly2.opcode{contcode},char(39));
-                            end
-                        end
-                        indpol = contpol;
-                    end
-                    contpol = contpol + 1;
+                
+                %Set the number of vertices, if it is not yet set.
+                poly2 = rolmip('getvar',label2);
+                if (vertices == 0)
+                    vertices = poly2.vertices;
                 end
+                
+                if (trans)
+                    for conttrans=1:length(poly2.data)
+                        poly2.data(conttrans).value = (poly2.data(conttrans).value)';
+                    end
+                    poly2.label = strcat(poly2.label,char(39));
+                    for contcode=1:length(poly2.data)
+                        poly2.opcode{contcode} = strcat(poly2.opcode{contcode},char(39));
+                    end
+                end
+                
             end
 
             [atual] = operation_poly(atual,poly2,op);
@@ -254,29 +250,31 @@ while (contexpr <= length(expr))
     tamfila = tamfila + 2;
 end
 
-%one = sum_{i=1}^{vertices} alpha_i = 1
-one = poly_struct(ones(1,vertices),'1',vertices,1);
-
-contfila = 2;
 resul = fila{1};
-while (contfila < tamfila)
-    op = fila{contfila};
-    poly2 = fila{contfila+1};
-    %Homogeneize the polynomials to the same degree, if necessary
-    deg1 = sum(resul.data(1).exponent);
-    deg2 = sum(poly2.data(1).exponent);
-    while (deg1 < deg2)
-        resul = operation_poly(resul,one,'*');
-        deg1 = deg1 + 1;
-    end
-    while (deg2 < deg1)
-        poly2 = operation_poly(poly2,one,'*');
-        deg2 = deg2 + 1;
-    end
-    %Apply the operation
-    [resul] = operation_poly(resul,poly2,op);
-    contfila = contfila + 2;
+if (vertices > 0)
+    %one = sum_{i=1}^{vertices} alpha_i = 1
+    one = poly_struct(ones(1,vertices),'1',vertices,1);
 end
+    
+    contfila = 2;
+    while (contfila < tamfila)
+        op = fila{contfila};
+        poly2 = fila{contfila+1};
+        %Homogeneize the polynomials to the same degree, if necessary
+        deg1 = sum(resul.data(1).exponent);
+        deg2 = sum(poly2.data(1).exponent);
+        while (deg1 < deg2)
+            resul = operation_poly(resul,one,'*');
+            deg1 = deg1 + 1;
+        end
+        while (deg2 < deg1)
+            poly2 = operation_poly(poly2,one,'*');
+            deg2 = deg2 + 1;
+        end
+        %Apply the operation
+        [resul] = operation_poly(resul,poly2,op);
+        contfila = contfila + 2;
+    end
 
 
 if (~isempty(newlabel))

@@ -9,7 +9,7 @@ function [resul] = product_poly(poly1,poly2)
 %Second version: using hash tables
 vertices = length(poly1.data(1).exponent);
 degree = sum(poly1.data(1).exponent)+sum(poly2.data(1).exponent);
-[tabexponents] = generate_homogenous_exponents(vertices,degree);
+[tabexponents] = generate_homogeneous_exponents(vertices,degree);
 if (degree>1)
     base = (degree*ones(1,vertices)).^(vertices-1:-1:0);
 else

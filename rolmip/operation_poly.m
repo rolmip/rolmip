@@ -31,7 +31,7 @@ else
     linkop = '+';
 end
 
-[tabexponents] = generate_homogenous_exponents(vertices,degree);
+[tabexponents] = generate_homogeneous_exponents(vertices,degree);
 if (degree>1)
     base = (degree*ones(1,vertices)).^(vertices-1:-1:0);
 else
