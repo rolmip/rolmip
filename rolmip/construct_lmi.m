@@ -1,19 +1,11 @@
 function LMIs = construct_lmi(varargin)
-% LMIs = construct_lmi(Term,vecpoly,ineq)
+% LMIs = construct_lmi(Term,ineq)
 %Function to construct the LMIs "Term 'ineq' 0"
 %Inputs: Term    -> Struct (Term{i,j}) containing the i-th row and j-th 
-%                   column of the LMI.
-%        vertices -> Number of vertices of the polytopic domain of the
-%                    system
-%        vecpoly -> vector with the polynomials
-%        vecpoly(1).label   -> string with the name of the variable 
-%                              (eg. 'P')
-%        vecpoly(1).vertices -> number of vertices
-%        vecpoly(1).data(n) -> data correspondent to the n-th monomy
-%        vecpoly(1).data(n).exponent -> values of the exponents of 
-%                                       the monomy (eg. [0 2])
-%        vecpoly(1).data(n).value    -> value of the monomy
-%        ineq    -> Signal of the inequality. Can be '>','<','>=','<='.
+%                    column of the LMI.
+%        ineq    -> Signal of the inequality. Can be '>','<','>=','<='. If
+%                    ineq is a different string, such string will be the
+%                    label of the resultant matrix.
 
 if (nargin == 2)
     LMIs = construct_lmi_terms(varargin{1},varargin{2});

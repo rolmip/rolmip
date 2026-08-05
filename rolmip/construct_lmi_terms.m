@@ -26,11 +26,18 @@ elseif (nargin == 2)
     vertices = 0;
     conti = 1;
     contj = 1;
-    while ((sum(vertices) == 0) && (conti <= size(Term,1)) && (contj <= size(Term,2)))
+    
+    while ((conti <= size(Term,1)) && (contj <= size(Term,2)))
         if (~isempty(Term{conti,contj}))
-            vertices = Term{conti,contj}.vertices;
-        else
-            vertices = 0;
+            if ((sum(vertices) == 0) || (length(Term{conti,contj}.vertices) > length(vertices)))
+                vertices = Term{conti,contj}.vertices;
+            end
+            ind = find(vertices == 0);
+            for cont=1:length(ind)
+                if (Term{conti,contj}.vertices(ind) ~= 0)
+                    vertices(ind) = Term{conti,contj}.vertices(ind);
+                end
+            end
         end
         contj = contj + 1;
         if (contj > size(Term,2))
@@ -93,15 +100,28 @@ if ((shape == 1) && (length(Term) > 1) && (~isempty(Term{2,1})))
 end
 
 
-
-
+%Homogenize the number of simplexes on all terms
+for conti=1:size(Term,1)
+    ini = 1;
+    if (shape == 1)
+        ini = conti;
+    end
+    for contj = ini:size(Term,2)
+        if (length(Term{conti,contj}.vertices) < length(vertices))
+            Term{conti,contj} = insert_simplex(Term{conti,contj},vertices(length(Term{conti,contj}.vertices)+1:end));
+        end
+    end
+end
 
 %First step: determine the highest degree from all the terms
-
 polyone = rolmip('getvar','1'); %Save the current '1' polynomial
 for contsimplex=1:length(vertices)
     for conti=1:size(Term,1)
-        for contj = conti:size(Term,2)
+        ini = 1;
+        if (shape == 1)
+            ini = conti;
+        end
+        for contj = ini:size(Term,2)
             deg{contsimplex}(conti,contj) = sum(Term{conti,contj}.data(1).exponent{contsimplex});
         end
     end
@@ -133,7 +153,11 @@ end
 for contsimplex=1:length(vertices)
     if (vertices(contsimplex) > 0)
         for conti=1:size(Term,1)
-            for contj = conti:size(Term,2)
+            ini = 1;
+            if (shape == 1)
+                ini = conti;
+            end
+            for contj = ini:size(Term,2)
                 contdeg = deg{contsimplex}(conti,contj);
                 while (contdeg < maxdeg(contsimplex))
                     Term{conti,contj} = operation_poly(Term{conti,contj},one{contsimplex},'*');

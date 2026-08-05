@@ -4,8 +4,7 @@ function [varargout] = insert_simplex(varargin)
 %
 % [poly,M] = insert_simplex(poly,vertices)
 % Inserts, in the variable poly, the multisimplex with the given number of
-% vertices and degrees. Both the vertices and the degrees correspond
-% to a row vector.
+% vertices, which corresponds to a row vector.
 %
 % [poly,M] = insert_simplex(label,vertices)
 % Inserts the new multisimplex in the polynomial with the given label.

@@ -137,7 +137,8 @@ if (strcmp(action,'close') || strcmp(action,'c'))
     
     %Function name and input arguments
     fprintf(fid,'function output = %s(',char(filename));
-    contC = 0; contV = 0; contP = 0; contK = 0; contS = 0; contA = 0; contZ = 0; contF = 0;
+    contC = 0; contV = 0; contP = 0; contK = 0; contS = 0; contA = 0; 
+    contZ = 0; contF = 0; contD = 0;
     %Type C: constant polynomial
     %Type V: variable polynomial
     %Type P: predefinded identity or zero matrices
@@ -146,6 +147,8 @@ if (strcmp(action,'close') || strcmp(action,'c'))
     %Type A: auxiliar matrix (created from construct_lmi)
     %Type Z: affine constant matrix
     %Type F: affine variable matrix
+    %Type H: matrix H, generated from the bounds of derivatives of params.
+    %Type D: polynomials dependent on other polynomials
     for cont=1:length(variables)
         if (~isempty(variables{cont}))
             if (variables{cont}.type == 'C')
@@ -184,6 +187,9 @@ if (strcmp(action,'close') || strcmp(action,'c'))
             elseif (variables{cont}.type == 'F')
                 contF = contF + 1;
                 varF{contF} = variables{cont};
+            elseif (variables{cont}.type == 'D')
+                contD = contD + 1;
+                varD{contD} = variables{cont};
             end
         end
     end
@@ -315,6 +321,42 @@ if (strcmp(action,'close') || strcmp(action,'c'))
     end
     
     fprintf(fid,'\n\n');
+    
+    %Set the dependent variables D
+    if (contD > 0)
+        for cont=1:length(varD)
+            
+            polaux = rolmip('getvar',varD{cont}.name);
+            fprintf(fid,'\n');
+            for contvar=1:length(polaux.opcode)
+                expr = polaux.opcodein{contvar};
+                toprint = strcat(varD{cont}.name,strcat('{',strcat(num2str(contvar),'} = ')));
+                contexpr = 1;
+                while (contexpr <= length(expr))
+                    varnow = [];
+                    while (~strcmp(expr(contexpr),'#'))
+                        varnow = strcat(varnow,expr(contexpr));
+                        contexpr = contexpr + 1;
+                    end
+                    contexpr = contexpr + 2;
+                    varnow = strcat(varnow,'{');
+                    while ((contexpr <= length(expr)) && ~strcmp(expr(contexpr),'+') && ~strcmp(expr(contexpr),'-') && ~strcmp(expr(contexpr),'*') && ~strcmp(expr(contexpr),char(39)) && ~strcmp(expr(contexpr),')') && ~strcmp(expr(contexpr),'('))
+                        varnow = strcat(varnow,expr(contexpr));
+                        contexpr = contexpr + 1;
+                    end
+                    varnow = strcat(varnow,'}');
+                    while ((contexpr <= length(expr)) && (strcmp(expr(contexpr),'+') || strcmp(expr(contexpr),'-') || strcmp(expr(contexpr),'*') || strcmp(expr(contexpr),char(39)) || strcmp(expr(contexpr),')') || strcmp(expr(contexpr),'(')))
+                        varnow = strcat(varnow,expr(contexpr));
+                        contexpr = contexpr + 1;
+                    end
+                    toprint = strcat(toprint,varnow);
+                end
+                toprint = strcat(toprint,'; \n');
+                fprintf(fid,toprint);
+            end
+        end
+    end
+        
     
 
     %Insert the LMIs in the file
@@ -585,7 +627,8 @@ function update_variables(Term,vecpoly)
 % name: Name of the variable
 % nummon: Number of monomials
 % type: If is variable (V), constant (C), predefined (P), scalar variable
-%    (S), scalar constant (K) or auxiliar variable (A)
+%    (S), scalar constant (K), auxiliar variable (A), affine constant
+%    matrix (Z), affine variable matrix (F)
 % position: positions [LMI,row,column] where such variable can be found.
 % dimension: dimension if it is variable
 % varstruct: If it is variable (V), denotes if it is symmetric or full. If
@@ -649,7 +692,7 @@ for conti=1:size(Term,1)
                 end
                 variables{key}.type = vartype;
                 variables{key}.position = [numLMI conti contj];
-                if ((vartype == 'V') || (vartype == 'P') || (vartype == 'F'))
+                if ((vartype == 'V') || (vartype == 'P') || (vartype == 'F') || (vartype == 'D'))
                     variables{key}.dimension{1} = [];
                     variables{key}.dimension{2} = [];
                     indexes = [indexes key];

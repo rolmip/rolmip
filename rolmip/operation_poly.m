@@ -9,13 +9,38 @@ function [resul] = operation_poly(poly1,poly2,op)
 %poly1.data(n).opcode -> cell array with the description of the operations performed
 %op -> description of the operation ('+', '-', '*')
 
-if (length(poly1.vertices) > 1)
-    vertices = poly1.vertices;
-elseif (length(poly2.vertices) > 1)
-    vertices = poly2.vertices;
+if (length(poly1.vertices) > length(poly2.vertices))
+    for cont=1:length(poly2.vertices) %First set the number of common vertices
+        if (poly1.vertices(cont) == 0)
+            vertices(cont) = poly2.vertices(cont);
+        else
+            vertices(cont) = poly1.vertices(cont);
+        end
+    end
+    %Now homogenize the simplexes
+    vertices = [vertices poly1.vertices(length(poly2.vertices)+1:end)];
+    poly2 = insert_simplex(poly2,poly1.vertices(length(poly2.vertices)+1:end));
+elseif (length(poly1.vertices) < length(poly2.vertices))
+    for cont=1:length(poly1.vertices) %First set the number of common vertices
+        if (poly2.vertices(cont) == 0)
+            vertices(cont) = poly1.vertices(cont);
+        else
+            vertices(cont) = poly2.vertices(cont);
+        end
+    end
+    %Now homogenize the simplexes
+    vertices = [vertices poly2.vertices(length(poly1.vertices)+1:end)];
+    poly1 = insert_simplex(poly1,poly2.vertices(length(poly1.vertices)+1:end));
 else
-    vertices = max([poly1.vertices poly2.vertices]);
+    for cont=1:length(poly1.vertices)
+        if (poly1.vertices(cont) == 0)
+            vertices(cont) = poly2.vertices(cont);
+        else
+            vertices(cont) = poly1.vertices(cont);
+        end
+    end
 end
+   
 if (op == '*')
     if (length(poly1.data) == 1) %If poly1 is a constant
         degree = cellfun(@sum,poly2.data(1).exponent);

@@ -92,7 +92,7 @@ if (nargin >= 5)
         if (degree(contsimplex) == 0)
             numcoefs = 1;
         end
-        numtotal = numtotal*numcoefs;
+        numtotal = round(numtotal*numcoefs);
     end
     for cont=1:numtotal
         M{conttotal} = sdpvar(rows,cols,parametr);

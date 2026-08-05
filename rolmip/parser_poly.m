@@ -91,7 +91,7 @@ while (contexpr <= length(expr))
                     
                 
         [atual] = parser_poly(auxexpr,vertices);
-        if (sum(vertices) == 0)
+        if ((sum(vertices) == 0) || (length(atual.vertices) > length(vertices)))
             vertices = atual.vertices;
         end
         atual.label = strcat('(',atual.label);
@@ -132,7 +132,7 @@ while (contexpr <= length(expr))
         
         %Set the number of vertices, if it is not yet set.
         atual = rolmip('getvar',labelatual);
-        if (sum(vertices) == 0)
+        if ((sum(vertices) == 0) || (length(atual.vertices) > length(vertices)))
             vertices = atual.vertices;
         end
         
@@ -183,7 +183,7 @@ while (contexpr <= length(expr))
                 auxexpr(end) = [];
 
                 [poly2] = parser_poly(auxexpr,vertices);
-                if (vertices == 0)
+                if ((sum(vertices) == 0) || (length(atual.vertices) > length(vertices)))
                     vertices = poly2.vertices;
                 end
                 poly2.label = strcat('(',poly2.label);
@@ -215,7 +215,7 @@ while (contexpr <= length(expr))
                 
                 %Set the number of vertices, if it is not yet set.
                 poly2 = rolmip('getvar',label2);
-                if (sum(vertices) == 0)
+                if ((sum(vertices) == 0) || (length(atual.vertices) > length(vertices)))
                     vertices = poly2.vertices;
                 end
                 
@@ -273,11 +273,17 @@ for contsimplex = 1:length(vertices)
     end
 end
     
+if (length(resul.vertices) < length(vertices))
+    resul = insert_simplex(resul,vertices(length(resul.vertices)+1:end));
+end
 contfila = 2;
 while (contfila < tamfila)
     op = fila{contfila};
     poly2 = fila{contfila+1};
     %Homogeneize the polynomials to the same degree, if necessary
+    if (length(poly2.vertices) < length(vertices))
+        poly2 = insert_simplex(poly2,vertices(length(poly2.vertices)+1:end));
+    end
     for contsimplex=1:length(vertices)
         deg1 = sum(resul.data(1).exponent{contsimplex});
         deg2 = sum(poly2.data(1).exponent{contsimplex});
