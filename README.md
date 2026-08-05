@@ -10,11 +10,11 @@ The details of ROLMIP can be found in the [User Manual](./docs/manual_rolmip.pdf
 
 ## Download
 
-Download ROLMIP here!
+Download ROLMIP [here](https://github.com/rolmip/rolmip/archive/refs/tags/3.3.zip)!
 
 ## Installation
 
-To install ROLMIP, it suffices to unzip the zip file into a separate folder and then add this folder to MATLAB's path.
+To install ROLMIP, it suffices to unzip the zip file into a separate folder and then add the folder `rolmip` to MATLAB's path.
 
 ## Contact
 
@@ -24,7 +24,7 @@ If you found any bug or have any suggestion to improve the ROLMIP project, don't
 
 The current version of ROLMIP is free of charge and openly distributed, but if you used ROLMIP (and consequently YALMIP) on your programs, please don't forget to cite us!
 
-Citation for [YALMIP](http://users.isy.liu.se/johanl/yalmip/pmwiki.php?n=Main.License)
+Citation for [YALMIP](https://yalmip.github.io/reference/lofberg2004/)
 
 ### Citation for ROLMIP:
 

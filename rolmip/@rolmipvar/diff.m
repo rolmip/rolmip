@@ -60,6 +60,15 @@ if (~iscell(dotbounds))
     clear aux;
 end
 
+%Verify if 0 \in dotbounds{i}
+for i=1:length(dotbounds)
+    for cont=1:size(dotbounds{i},1)
+        if (dotbounds{i}(cont,1)*dotbounds{i}(cont,2) > 0)
+            error('The bounds for the derivatives must contain the value 0 in order to generate a compact polytope');
+        end
+    end
+end
+
 if (sum(polyin.vertices) == 0)
     %In this case, the polynomial is a constant matrix
     varargout{1} = rolmipvar(zeros(size(polyin.data(1).value)),labelout);
@@ -191,12 +200,16 @@ function dotbsimplex = affine2simplex(bounds,dotbounds)
 % simplex representation (dotbsimplex).
 
 for cont=1:size(dotbounds,1)
-    auxmin = dotbounds(cont,1)/(bounds(cont,1) - bounds(cont,2));
-    auxmax = dotbounds(cont,2)/(bounds(cont,1) - bounds(cont,2));
-    if (auxmin < auxmax)
-        dotbsimplex{cont} = [auxmin auxmax; -auxmax -auxmin];
+    if (bounds(cont,1) == bounds(cont,2)) %Lower = upper bound
+        dotbsimplex{cont} = [0 0; 0 0];
     else
-        dotbsimplex{cont} = [auxmax auxmin; -auxmin -auxmax];
+        auxmin = dotbounds(cont,1)/(bounds(cont,1) - bounds(cont,2));
+        auxmax = dotbounds(cont,2)/(bounds(cont,1) - bounds(cont,2));
+        if (auxmin < auxmax)
+            dotbsimplex{cont} = [auxmin auxmax; -auxmax -auxmin];
+        else
+            dotbsimplex{cont} = [auxmax auxmin; -auxmin -auxmax];
+        end
     end
 end
 return

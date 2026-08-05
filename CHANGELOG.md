@@ -1,3 +1,4 @@
+- [Version 3.3:](https://github.com/rolmip/rolmip/releases/tag/3.3) Compact polytope verification in diff; refactor of simplex representation in diff.
 - [Version 3.2:](https://github.com/rolmip/rolmip/releases/tag/3.2) Bug corrections.
 - [Version 3.1:](https://github.com/rolmip/rolmip/releases/tag/3.1) Bug corrections; Compatibility with Octave.
 - [Version 3.0:](https://github.com/rolmip/rolmip/releases/tag/3.0) Bug corrections; Manual update.
