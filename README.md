@@ -56,6 +56,12 @@ http://doi.acm.org/10.1145/3323925
 [R-RoMulOC - Randomized and Robust Multi-Objective Control toolbox](http://homepages.laas.fr/peaucell/software.php#romuloc)  
 [SOSTools](http://www.cds.caltech.edu/sostools/)
 
+## About the Python implementation
+
+The Python implementation of ROLMIP (RolmiPy) and its core ([PolyAny](https://github.com/rolmip/polyany)) is being developed by [Esdras Battosti](https://github.com/ximiraxelo) and [Cristiano Agulhari](https://github.com/agulhari).
+
+[PolyAny](https://github.com/rolmip/polyany) is a Python package for algebraic manipulation of multivariate polynomials, which will be used to perform internal operations in RolmiPy.
+
 ## Acknowledgments
 
 This work is supported by the Brazilian agency CNPq grant 402830/2016-4.
