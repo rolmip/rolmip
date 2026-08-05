@@ -678,11 +678,13 @@ for conti=1:size(Term,1)
                     end
                 end
 
+
                 if (issymmetric(vecpoly{indpol}.data(1).value))
                     variables{key}.varstruct = 'symmetric';
                 else
                     variables{key}.varstruct = 'full';
                 end
+
 
                 variables{key}.name = varnow;
                 if ((vartype == 'F') || (vartype == 'Z'))

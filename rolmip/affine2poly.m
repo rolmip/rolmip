@@ -40,7 +40,7 @@ elseif (ischar(varargin{3}))
         bounds = varargin{4};
     end
 else
-    error('Syntax error. To see the proper input syntax, type ''help affine2poly_struct''');
+    error('Syntax error. To see the proper input syntax, type ''help affine2poly''');
     return;
 end
 

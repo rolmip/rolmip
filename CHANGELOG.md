@@ -1,3 +1,4 @@
+- [Version 3.0a:](https://github.com/rolmip/rolmip/releases/tag/3.0a) Insertion of the rolmipvar variable, which brings new functionalities; Bug corrections.
 - [Version 2.3:](https://github.com/rolmip/rolmip/releases/tag/2.3) Bug corrections.
 - [Version 2.2:](https://github.com/rolmip/rolmip/releases/tag/2.2) Bug corrections.
 - [Version 2.1:](https://github.com/rolmip/rolmip/releases/tag/2.1) Easier definitions for constant matrices using poly_struct; Adaptation of the LMI definitions to the newest YALMIP version (thanks to Hugo Tadashi); Bug corrections.
