@@ -4,7 +4,7 @@
 
 ROLMIP (Robust LMI Parser) is a set of programs that works along with the [YALMIP](https://yalmip.github.io) toolbox, and it is designed to work specifically with optimization problems presenting parameter-dependent variables with parameters in the unit simplex. The variables are assumed to depend polynomially on the parameters, being the polynomials considered to be homogeneous. Such optimization problems arise, for example, on the analysis and synthesis conditions related to uncertain continuous or discrete systems, with constraints that are usually defined as Linear Matrix Inequalities (LMIs).
 
-The main objective of ROLMIP is to provide an easy interface for the user, starting from the definition of the variables and going through a straighforward way in defining the LMIs. In addition, once all the variables and LMIs are set they can be converted into a Matlab executable file which solves the same problem but consuming much less time.
+The main objective of ROLMIP is to provide an easy interface for the user, starting from the definition of the variables and going through a straightforward way in defining the LMIs. In addition, once all the variables and LMIs are set they can be converted into a Matlab executable file which solves the same problem but consuming much less time.
 
 The details of ROLMIP can be found in the [User Manual](./docs/manual_rolmip.pdf).
 
