@@ -1,3 +1,4 @@
+- [Version 3.1:](https://github.com/rolmip/rolmip/releases/tag/3.1) Bug corrections; Compatibility with Octave.
 - [Version 3.0:](https://github.com/rolmip/rolmip/releases/tag/3.0) Bug corrections; Manual update.
 - [Version 3.0a:](https://github.com/rolmip/rolmip/releases/tag/3.0a) Insertion of the rolmipvar variable, which brings new functionalities; Bug corrections.
 - [Version 2.3:](https://github.com/rolmip/rolmip/releases/tag/2.3) Bug corrections.

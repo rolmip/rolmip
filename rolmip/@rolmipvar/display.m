@@ -51,16 +51,16 @@ else
             expon = poly.data(cont).exponent{contsimplex};
             for contexp=1:length(expon)
                 if (expon(contexp) == 1)
-                    strmain = [strmain simplexnames{contsimplex} num2str(contexp) '*'];
+                    strmain = [num2str(strmain) simplexnames{contsimplex} num2str(contexp) '*'];
                 elseif (expon(contexp) > 1)
-                    strmain = [strmain simplexnames{contsimplex} num2str(contexp) '^' num2str(expon(contexp)) '*'];
+                    strmain = [num2str(strmain) simplexnames{contsimplex} num2str(contexp) '^' num2str(expon(contexp)) '*'];
                 end
             end
         end
         tammain = length(strmain);
-        strmain = [strmain '[' num2str(poly.data(cont).value(1,:)) '] '];
+        strmain = [num2str(strmain) '[' num2str(poly.data(cont).value(1,:)) '] '];
             
-        strunder = [strunder char(32*ones(rowsunder,tammain - size(strunder,2)))]; %Fill with spaces the string under the main string
+        strunder = [num2str(strunder) char(32*ones(rowsunder,tammain - size(strunder,2)))]; %Fill with spaces the string under the main string
         auxunder = [];
         for contaux = 1:rowsunder
             thisrow = ['[' num2str(poly.data(cont).value(contaux+1,:)) '] '];
@@ -75,7 +75,7 @@ else
             end
             auxunder(contaux,:) = thisrow;
         end
-        strunder = [strunder auxunder];
+        strunder = [num2str(strunder) num2str(char(auxunder))];
         
         difer = size(strunder,2) - size(strmain,2);
         if (difer > 0) %The string under is larger

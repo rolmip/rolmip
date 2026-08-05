@@ -25,7 +25,7 @@ if (strcmp(S.type,'()'))
             totalsimpl(cont) = (factorial(N+deg-1)/(factorial(deg)*factorial(N-1)));
             numelem = numelem*totalsimpl(cont);
         end
-        if ((isstr(S.subs{cont})) && (strcmp(S.subs{cont},':')))
+        if ((ischar(S.subs{cont})) && (strcmp(S.subs{cont},':')))
             colon = [colon cont];
         end
     end

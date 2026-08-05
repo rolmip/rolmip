@@ -60,6 +60,7 @@ if (nargin == 1)
     poly.vertices = M.vertices;
     poly.opcode = M.opcode;
     poly.data = M.data;
+    poly.dims = size(M.data(1).value);
     if (isfield(M,'bounds'))
         poly.bounds = M.bounds;
     else
@@ -248,9 +249,11 @@ else
         conttotal = 1;
         for (contsimplex = 1:length(vertices))
             if (vertices(contsimplex) > 0)
-                numcoefs = (factorial(vertices(contsimplex) + ...
-                    degree(contsimplex) - 1))/(factorial(degree(contsimplex)) ...
-                    *factorial(vertices(contsimplex)-1));
+                numcoefs = calccoefs(vertices(contsimplex),degree(contsimplex));
+
+%                 numcoefs = (factorial(vertices(contsimplex) + ...
+%                     degree(contsimplex) - 1))/(factorial(degree(contsimplex)) ...
+%                     *factorial(vertices(contsimplex)-1));
             else
                 numcoefs = 1;
             end
@@ -280,7 +283,8 @@ else
             return
         else
             if (degree > 0) %Not a constant
-                numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
+                numcoefs = calccoefs(vertices,degree);
+                %numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
                 [order,tam] = size(M);
                 tam = tam/numcoefs;
                 [exponents] = generate_homogeneous_exponents(vertices,degree);
@@ -307,7 +311,8 @@ else
             else
                 if (nargin < 5) %The matrices are given in the input data
                     if (degree > 0)
-                        numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
+                        numcoefs = calccoefs(vertices,degree);
+                        %numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
                         if (length(M) ~= numcoefs)
                             error('Invalid number of monomials entered');
                             poly = [];
@@ -328,7 +333,8 @@ else
                     for contsimplex=1:length(degree)
                         if (degree(contsimplex) > 0) %Not a constant
                             [exponents{contsimplex}] = generate_homogeneous_exponents(vertices(contsimplex),degree(contsimplex));
-                            numcoefs = numcoefs + (factorial(vertices(contsimplex) + degree(contsimplex) - 1))/(factorial(degree(contsimplex))*factorial(vertices(contsimplex)-1));
+                            numcoefs = numcoefs + calccoefs(vertices(contsimplex),degree(contsimplex));
+                            %numcoefs = numcoefs + (factorial(vertices(contsimplex) + degree(contsimplex) - 1))/(factorial(degree(contsimplex))*factorial(vertices(contsimplex)-1));
                         else %degree(contsimplex) == 0
                             exponents{contsimplex} = zeros(1,max([vertices(contsimplex) 1])); %exponents{contsimplex} = 0; BATEMA
                             numcoefs = numcoefs + 1;
@@ -506,4 +512,28 @@ for contsimplex=1:length(exponent)
     end
 end
 index=total-index;
+return
+
+%__________________________________________________________________________
+function numcoefs = calccoefs(vert,deg)
+
+if ((vert <= 2) && (deg <= 2))
+    numcoefs = (factorial(vert + deg - 1))/(factorial(deg)*factorial(vert-1));
+else
+    aux = 1;
+    cont = 1;
+    if (vert > deg)
+        while ((vert+deg-cont) > (vert-1))
+            aux = aux*(vert+deg-cont);
+            cont = cont + 1;
+        end
+        numcoefs = aux/factorial(deg);
+    else
+        while ((vert+deg-cont) > (deg))
+            aux = aux*(vert+deg-cont);
+            cont = cont+1;
+        end
+        numcoefs = aux/factorial(vert-1);
+    end
+end
 return
