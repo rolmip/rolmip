@@ -229,6 +229,26 @@ if (polynomial)
     end
     poly = polyend;
     
+    %Insert the missing simplexes, to avoid zero vertices (20/05/2021)
+    for cont = 1:length(poly.vertices)
+        if (poly.vertices(cont) == 0)
+            clear Maux aux;
+            aux{cont} = [1 0];
+            aux{length(poly.vertices)+1} = 0;
+            Maux{1} = aux;
+            aux{cont} = [0 1];
+            aux{length(poly.vertices)+1} = 0;
+            Maux{2} = aux;
+            vertaux = zeros(size(poly.vertices)); 
+            vertaux(cont) = 2;
+            degaux = zeros(size(poly.vertices));
+            degaux(cont) = 1;
+            polyaux = rolmipvar(Maux,'1',vertaux,degaux);
+            poly = poly + polyaux;
+        end
+    end
+    %
+    
     Maux = [];
     if (~isempty(constant))
 %         for contaux = 1:numparam
