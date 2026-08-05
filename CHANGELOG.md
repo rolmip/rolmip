@@ -1,1 +1,1 @@
-- [Version 1.0:](https://github.com/rolmip/rolmip/releases/tag/1.0.0) First release.
+- [Version 1.0:](https://github.com/rolmip/rolmip/releases/tag/1.0) First release.
