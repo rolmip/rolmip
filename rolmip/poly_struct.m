@@ -5,7 +5,12 @@ function [varargout] = poly_struct(varargin)
 % for a variable set M, with a given label and given the number of 
 % vertices and the degree (degree = 0 if constant). The variables
 % M1, M2, ... , MN can be concatenated in M (M = [M1 M2 ... MN]) or
-% disposed in cells (M{1} = M1, ... , M{N} = MN).
+% disposed in cells, either inputting the coefficients without informing 
+% the exponents of each monomial (M{1} = M1, ... , M{N} = MN) (in this
+% case, the user is supposed to know the order of the exponents, which is
+% the same order of the output of the function
+% generate_homogeneous_exponents), either informing the exponents of each
+% monomial (M{1} = {[1 0 0 ... 0 0], M1}, ... M{N} = {[0 0 0 ... 0 1],MN}).
 %
 % [poly] = poly_struct(M,label,'scalar') returns a scalar. Note that 
 % M has to have dimension 1x1.
@@ -74,103 +79,211 @@ elseif (nargin == 6)
     degree = varargin{6};
 end
 
+numtotal = 1; %numcoefs total
 if (nargin >= 5)
     %Define the variable
-    if (vertices > 0)
-        numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
-    else
-        numcoefs = 1;
+    conttotal = 1;
+    for (contsimplex = 1:length(vertices))
+        if (vertices(contsimplex) > 0)
+            numcoefs = (factorial(vertices(contsimplex) + degree(contsimplex) - 1))/(factorial(degree(contsimplex))*factorial(vertices(contsimplex)-1));
+        else
+            numcoefs = 1;
+        end
+        if (degree(contsimplex) == 0)
+            numcoefs = 1;
+        end
+        numtotal = numtotal*numcoefs;
     end
-    for cont=1:numcoefs
-        M{cont} = sdpvar(rows,cols,parametr);
+    for cont=1:numtotal
+        M{conttotal} = sdpvar(rows,cols,parametr);
+        conttotal = conttotal + 1;
     end
 end
 
 if ((nargin == 2) && (scalar))
     M = sdpvar(1,1);
 end
-    
+
 
 poly.label = label;
 poly.vertices = vertices;
-if (degree > 0) %Not a constant
-    numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
-    if (~iscell(M))
-        [order,tam] = size(M);
-        tam = tam/numcoefs;
-        [exponents] = generate_homogeneous_exponents(vertices,degree);
-        for cont=1:size(exponents,1)
-            poly.data(cont).exponent = exponents(cont,:);
-            poly.data(cont).value = M(:,(cont-1)*tam+1:cont*tam);
-        end
+
+
+if (~iscell(M))
+    if (length(vertices) > 1)
+        error('In the multi-simplex case, input each monomial as {deg1,deg2,...,degN,A}.');
+        poly = [];
+        return
     else
-        if (iscell(M{1}))
+        if (degree > 0) %Not a constant
+            numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
+            [order,tam] = size(M);
+            tam = tam/numcoefs;
             [exponents] = generate_homogeneous_exponents(vertices,degree);
-            for cont=1:length(M)
-                if (sum(M{cont}{1}) == degree)
-                    poly.data(cont).exponent = M{cont}{1};
-                    poly.data(cont).value = M{cont}{2};
-                    
-                    contexp = 1;
-                    ind = 1:size(exponents,1);
-                    while ((contexp <= size(exponents,2)) && (sum(isnan(ind)) < length(ind)-1))
-                        aux = find(~isnan(ind));
-                        indtakeoff = find(exponents(aux,contexp)~=M{cont}{1}(contexp));
-                        ind(indtakeoff) = nan;
-                        contexp = contexp + 1;
+            for cont=1:size(exponents,1)
+                poly.data(cont).exponent = {exponents(cont,:)};
+                poly.data(cont).value = M(:,(cont-1)*tam+1:cont*tam);
+            end
+        else
+            poly.data(1).exponent = {0};
+            poly.data(1).value = M;
+        end
+    end
+    
+else %If M is a cell array
+    if (~iscell(M{1})) %If the degree of each monomial is not specified
+        if ((length(vertices) > 1) && (nargin < 5))
+            error('In the multi-simplex case, input each monomial as {deg1,deg2,...,degN,A}.');
+            poly = [];
+            return
+        else
+            if (nargin < 5) %The matrices are given in the input data
+                if (degree > 0)
+                    numcoefs = (factorial(vertices + degree - 1))/(factorial(degree)*factorial(vertices-1));
+                    if (length(M) ~= numcoefs)
+                        error('Invalid number of monomials entered');
+                        poly = [];
+                        return
+                    else
+                        [exponents] = generate_homogeneous_exponents(vertices,degree);
+                        for cont=1:size(exponents,1)
+                            poly.data(cont).exponent = {exponents(cont,:)};
+                            poly.data(cont).value = M{cont};
+                        end
                     end
-                    exponents(find(~isnan(ind)),:) = [];
+                else
+                    poly.data(1).exponent{1} = 0;
+                    poly.data(1).value = M{1};
+                end
+            else %A variable is being generated
+                numcoefs = 0;
+                for contsimplex=1:length(degree)
+                    if (degree(contsimplex) > 0) %Not a constant
+                        [exponents{contsimplex}] = generate_homogeneous_exponents(vertices(contsimplex),degree(contsimplex));
+                        numcoefs = numcoefs + (factorial(vertices(contsimplex) + degree(contsimplex) - 1))/(factorial(degree(contsimplex))*factorial(vertices(contsimplex)-1));
+                    else %degree(contsimplex) == 0
+                        exponents{contsimplex} = 0;
+                        numcoefs = numcoefs + 1;
+                    end
+                    exponent{contsimplex} = exponents{contsimplex}(1,:);
+                end
+                
+                if (numtotal > 1)
+                    numcoefs = numtotal;
+                end
+                
+                contexp = ones(1,length(vertices)+1);
+                if ((nargin < 5) && (length(M) ~= numcoefs))
+                    error('Invalid number of monomials entered');
+                    poly = [];
+                    return
+                else
+                    for cont=1:length(M)
+                        poly.data(cont).exponent = exponent;
+                        poly.data(cont).value = M{cont};
+                        
+                        contexp(1) = contexp(1) + 1;
+                        if (size(exponents{1},1) >= contexp(1))
+                            exponent{1} = exponents{1}(contexp(1),:);
+                        end
+                        aux = 1;
+                        while ((aux <= length(vertices)) && (contexp(aux) > size(exponents{aux},1)))
+                            contexp(aux) = 1;
+                            contexp(aux+1) = contexp(aux+1) + 1;
+                            
+                            exponent{aux} = exponents{aux}(1,:);
+                            if ((aux < length(exponents)) && (size(exponents{aux+1},1) >= contexp(aux+1)))
+                                exponent{aux+1} = exponents{aux+1}(contexp(aux+1),:);
+                            end
+                            
+                            aux = aux + 1;
+                        end
+                    end
+                end
+            end
+        end
+    else  %If the degree of each monomial is specified
+        %Create the hash table
+        numelem = 1;
+        vertnow = 0;
+        base = [];
+        for contsimplex=1:length(vertices)
+            [exponents{contsimplex}] = generate_homogeneous_exponents(vertices(contsimplex),degree(contsimplex));
+            
+            if (degree(contsimplex) > 0)
+                if (sum(degree) > 1)
+                    base = [base (sum(degree)*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
+                    vertnow = vertnow + vertices(contsimplex);
+                else
+                    base = [base (2*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
+                    vertnow = vertnow + vertices(contsimplex);
+                end
+            end
+            numelem = numelem*size(exponents{contsimplex},1);
+        end
+        
+        contexp = ones(1,length(vertices)+1);
+        for conttotal=1:numelem
+            vetexponent = [];
+            for contsimplex=1:length(exponents)
+                polyexponent{contsimplex} = exponents{contsimplex}(contexp(contsimplex),:);
+                if (sum(polyexponent{contsimplex}) > 0)
+                    vetexponent = [vetexponent polyexponent{contsimplex}];
+                end
+            end
+            indhash(conttotal) = sum(base.*vetexponent);
+            
+            contexp(1) = contexp(1) + 1;
+            aux = 1;
+            while ((aux <= length(vertices)) && (contexp(aux) > size(exponents{aux},1)))
+                contexp(aux) = 1;
+                contexp(aux+1) = contexp(aux+1) + 1;
+                aux = aux + 1;
+            end
+        end
+
+        for cont=1:length(M)
+            for contsimplex=1:(length(M{cont})-1)
+                if (sum(M{cont}{contsimplex}) == degree(contsimplex))
+                    exponent{contsimplex} = M{cont}{contsimplex};
                 else
                     error('At least one exponent of the polynomial does not have the chosen degree');
                     poly = [];
                     return
                 end
             end
-            contpoly = length(poly.data) + 1;
-            for cont=1:size(exponents,1)
-                poly.data(contpoly).exponent = exponents(cont,:);
-                poly.data(contpoly).value = zeros(size(M{1}{2}));
-                contpoly = contpoly + 1;
-            end
-                
-        else
-            if (length(M) ~= numcoefs)
-                error('Invalid number of monomials entered');
-                poly = [];
-                return
-            else
-                [exponents] = generate_homogeneous_exponents(vertices,degree);
-                for cont=1:size(exponents,1)
-                    poly.data(cont).exponent = exponents(cont,:);
-                    poly.data(cont).value = M{cont};
-                end
-            end
+            
+            indresul = gethash(exponent,indhash,base);
+            poly.data(indresul).exponent = exponent;
+            poly.data(indresul).value = M{cont}{length(M{cont})};
         end
-    end
-else %Constant
-    if (vertices == 0)
-        poly.data(1).exponent = 0;
-        if (iscell(M))
-            poly.data(1).value = M{1};
-        else
-            poly.data(1).value = M;
-        end
-    else
-        exponent = [1 zeros(1,vertices-1)];
-        for cont=1:vertices
-            poly.data(cont).exponent = exponent;
-            if (iscell(M))
-                poly.data(cont).value = M{1};
-            else
-                poly.data(cont).value = M;
+        
+        %Insert the zero-monomials
+        
+        contexp = ones(1,length(vertices)+1);
+        for conttotal=1:numelem
+            exponent = [];
+            for contsimplex=1:(length(M{cont})-1)
+                exponent{contsimplex} = exponents{contsimplex}(contexp(contsimplex),:);
             end
-            exponent = circshift(exponent,[0 1]);
+            
+            indresul = gethash(exponent,indhash,base);
+            if ((indresul > length(poly.data)) || (isempty(poly.data(indresul).value)))
+                poly.data(indresul).exponent = exponent;
+                poly.data(indresul).value = zeros(size(M{1}{length(M{1})}));
+            end
+            contexp(1) = contexp(1) + 1;
+            aux = 1;
+            while ((aux <= length(vertices)) && (contexp(aux) > size(exponents{aux},1)))
+                contexp(aux) = 1;
+                contexp(aux+1) = contexp(aux+1) + 1;
+                aux = aux + 1;
+            end
         end
     end
 end
-
-
-
+            
+            
 %Determine the field opcode: if the polynomials are variables (V),
 %constants (C), predefined identity or zeros matrices (P), scalar
 %variable (S) or scalar constant (K)
@@ -207,4 +320,16 @@ end
 
 rolmip('setvar',poly);
 
+return
+
+
+function index = gethash(exponent,hash,base)
+vetexponent = [];
+for contsimplex=1:(length(exponent)) 
+    if (sum(exponent{contsimplex}) > 0)
+        vetexponent = [vetexponent exponent{contsimplex}];
+    end
+end
+
+index = find(sum(base.*(vetexponent))==hash);
 return

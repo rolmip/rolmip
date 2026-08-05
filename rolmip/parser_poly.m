@@ -90,9 +90,8 @@ while (contexpr <= length(expr))
         auxexpr(end) = [];
                     
                 
-        %[atual] = parser_poly(auxexpr,vecpoly,vertices);
         [atual] = parser_poly(auxexpr,vertices);
-        if (vertices == 0)
+        if (sum(vertices) == 0)
             vertices = atual.vertices;
         end
         atual.label = strcat('(',atual.label);
@@ -133,7 +132,7 @@ while (contexpr <= length(expr))
         
         %Set the number of vertices, if it is not yet set.
         atual = rolmip('getvar',labelatual);
-        if (vertices == 0)
+        if (sum(vertices) == 0)
             vertices = atual.vertices;
         end
         
@@ -183,7 +182,6 @@ while (contexpr <= length(expr))
                 end
                 auxexpr(end) = [];
 
-                %[poly2] = parser_poly(auxexpr,vecpoly,vertices);
                 [poly2] = parser_poly(auxexpr,vertices);
                 if (vertices == 0)
                     vertices = poly2.vertices;
@@ -195,7 +193,7 @@ while (contexpr <= length(expr))
                 end
                 if ((contexpr<=length(expr)) && (expr(contexpr)==char(39))) %transpose
                     for conttrans = 1:length(atual.data)
-                        poly2.data(conttrans).value = (poly2.data(conttrans).value)'; %%%%%??????
+                        poly2.data(conttrans).value = (poly2.data(conttrans).value)'; 
                     end
                     poly2.label = strcat(poly2.label,char(39));
                     for contcode=1:length(poly2.data)
@@ -217,7 +215,7 @@ while (contexpr <= length(expr))
                 
                 %Set the number of vertices, if it is not yet set.
                 poly2 = rolmip('getvar',label2);
-                if (vertices == 0)
+                if (sum(vertices) == 0)
                     vertices = poly2.vertices;
                 end
                 
@@ -251,30 +249,55 @@ while (contexpr <= length(expr))
 end
 
 resul = fila{1};
-if (vertices > 0)
-    %one = sum_{i=1}^{vertices} alpha_i = 1
-    one = poly_struct(ones(1,vertices),'1',vertices,1);
+polyone = rolmip('getvar','1'); %Save the current '1' polynomial
+for contsimplex = 1:length(vertices)
+    if (vertices(contsimplex) > 0)
+        %one = sum_{i=1}^{vertices} alpha_i = 1
+        clear M
+        degaux = [1 zeros(1,vertices(contsimplex)-1)];
+        for cont1 = 1:vertices(contsimplex)
+            for cont2 = 1:length(vertices)
+                if (cont2 == contsimplex)
+                    M{cont1}{cont2} = degaux;
+                    degaux = circshift(degaux,[0 1]);
+                else
+                    M{cont1}{cont2} = [0];
+                end
+            end
+            M{cont1}{cont2+1} = 1;
+        end
+        
+        deg = zeros(1,length(vertices));
+        deg(contsimplex) = 1;
+        one{contsimplex} = poly_struct(M,'1',vertices,deg);
+    end
 end
     
-    contfila = 2;
-    while (contfila < tamfila)
-        op = fila{contfila};
-        poly2 = fila{contfila+1};
-        %Homogeneize the polynomials to the same degree, if necessary
-        deg1 = sum(resul.data(1).exponent);
-        deg2 = sum(poly2.data(1).exponent);
+contfila = 2;
+while (contfila < tamfila)
+    op = fila{contfila};
+    poly2 = fila{contfila+1};
+    %Homogeneize the polynomials to the same degree, if necessary
+    for contsimplex=1:length(vertices)
+        deg1 = sum(resul.data(1).exponent{contsimplex});
+        deg2 = sum(poly2.data(1).exponent{contsimplex});
         while (deg1 < deg2)
-            resul = operation_poly(resul,one,'*');
+            resul = operation_poly(resul,one{contsimplex},'*');
             deg1 = deg1 + 1;
         end
         while (deg2 < deg1)
-            poly2 = operation_poly(poly2,one,'*');
+            poly2 = operation_poly(poly2,one{contsimplex},'*');
             deg2 = deg2 + 1;
         end
-        %Apply the operation
-        [resul] = operation_poly(resul,poly2,op);
-        contfila = contfila + 2;
     end
+    %Apply the operation
+    [resul] = operation_poly(resul,poly2,op);
+    contfila = contfila + 2;
+end
+
+if (~isempty(polyone)) %Restore the '1' polynomial
+    rolmip('setvar',polyone);
+end
 
 
 if (~isempty(newlabel))

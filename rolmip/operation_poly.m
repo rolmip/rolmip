@@ -9,17 +9,23 @@ function [resul] = operation_poly(poly1,poly2,op)
 %poly1.data(n).opcode -> cell array with the description of the operations performed
 %op -> description of the operation ('+', '-', '*')
 
-vertices = max([length(poly1.data(1).exponent) length(poly2.data(1).exponent)]);
+if (length(poly1.vertices) > 1)
+    vertices = poly1.vertices;
+elseif (length(poly2.vertices) > 1)
+    vertices = poly2.vertices;
+else
+    vertices = max([poly1.vertices poly2.vertices]);
+end
 if (op == '*')
     if (length(poly1.data) == 1) %If poly1 is a constant
-        degree = sum(poly2.data(1).exponent);
+        degree = cellfun(@sum,poly2.data(1).exponent);
     elseif (length(poly2.data) == 1) %If poly2 is a constant
-        degree = sum(poly1.data(1).exponent);
+        degree = cellfun(@sum,poly1.data(1).exponent);
     else %Both are polynomials
-        degree = sum(poly1.data(1).exponent)+sum(poly2.data(1).exponent);
+        degree = cellfun(@sum,poly1.data(1).exponent) + cellfun(@sum,poly2.data(1).exponent); 
     end
 elseif ((op == '+') || (op == '-'))
-    degree = sum(poly1.data(1).exponent);
+    degree = cellfun(@sum,poly1.data(1).exponent); 
 end
 
 aux = poly1.opcode{1};
@@ -31,17 +37,52 @@ else
     linkop = '+';
 end
 
-[tabexponents] = generate_homogeneous_exponents(vertices,degree);
-if (degree>1)
-    base = (degree*ones(1,vertices)).^(vertices-1:-1:0);
-else
-    base = (2*ones(1,vertices)).^(vertices-1:-1:0);
+
+%Creating the hash table
+numelem = 1;
+vertnow = 0;
+base = [];
+for contsimplex=1:length(vertices)
+    [tabexponents{contsimplex}] = generate_homogeneous_exponents(vertices(contsimplex),degree(contsimplex));
+    
+    if (degree(contsimplex) > 0)
+        if (sum(degree) > 1)
+            base = [base (sum(degree)*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
+            vertnow = vertnow + vertices(contsimplex);
+        else
+            base = [base (2*ones(1,vertices(contsimplex))).^(vertnow:vertnow+vertices(contsimplex)-1)];
+            vertnow = vertnow + vertices(contsimplex);
+        end
+    end
+    numelem = numelem*size(tabexponents{contsimplex},1);
 end
-for cont=1:size(tabexponents,1)
-    indhash(cont) = sum(base.*tabexponents(cont,:));
-    resul.data(cont).value = 0;
-    resul.opcode{cont} = [];
+
+contexp = ones(1,length(vertices)+1);
+for conttotal=1:numelem
+    vetexponent = [];
+    for contsimplex=1:length(tabexponents)
+        polyexponent{contsimplex} = tabexponents{contsimplex}(contexp(contsimplex),:);
+        if (sum(polyexponent{contsimplex}) > 0)
+            vetexponent = [vetexponent polyexponent{contsimplex}];
+        end
+    end
+    indhash(conttotal) = sum(base.*vetexponent);
+            
+    resul.data(conttotal).exponent = polyexponent;
+    resul.data(conttotal).value = 0;
+    resul.opcode{conttotal} = [];
+    
+    contexp(1) = contexp(1) + 1;
+    aux = 1;
+    while ((aux <= length(vertices)) && (contexp(aux) > size(tabexponents{aux},1)))
+        contexp(aux) = 1;
+        contexp(aux+1) = contexp(aux+1) + 1;
+        aux = aux + 1;
+    end
 end
+
+
+
 %Label '1' or '-1' and op '*' -> special case, does not appear
 value1 = [];
 if ((strcmp(poly1.label,'1') || strcmp(poly1.label,'-1')) && (strcmp(op,'*')))
@@ -68,30 +109,30 @@ else
     resul.label = strcat(poly1.label,op);
     resul.label = strcat(resul.label,poly2.label);
 end
+
 if (op == '*')
     %If one of the factors is a constant
     if (length(poly1.data) == 1) %Poly1 is a constant
         for cont2=1:length(poly2.data)
             exponent = poly2.data(cont2).exponent;
             
-            hash = sum(base.*exponent);
-            indresul = find(indhash==hash);
+            indresul = gethash(exponent,indhash,base);
             
             resul.data(indresul).exponent = exponent;
             resul.data(indresul).value = resul.data(indresul).value + (poly1.data(1).value*poly2.data(cont2).value);
             if (value1 == 1)
                 if (~isempty(resul.opcode{indresul}))
-                    resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop); %%%%%%%%%%%
-                    resul.opcode{indresul} = strcat(resul.opcode{indresul},poly2.opcode{cont2});%%%%%%%%%5
+                    resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop); 
+                    resul.opcode{indresul} = strcat(resul.opcode{indresul},poly2.opcode{cont2});
                 else
-                    resul.opcode{indresul} = poly2.opcode{cont2};%%%%%%%%%
+                    resul.opcode{indresul} = poly2.opcode{cont2};
                 end
             elseif (value1 == 2)
                 if (~isempty(resul.opcode{indresul}))
-                    resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop);%%%%%%%5
-                    resul.opcode{indresul} = strcat(resul.opcode{indresul},poly1.opcode{1});%%%%%%%%%
+                    resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop);
+                    resul.opcode{indresul} = strcat(resul.opcode{indresul},poly1.opcode{1});
                 else
-                    resul.opcode{indresul} = poly1.opcode{1};%%%%%%%%
+                    resul.opcode{indresul} = poly1.opcode{1};
                 end
             else
                 if (subtr)
@@ -137,24 +178,23 @@ if (op == '*')
         for cont1=1:length(poly1.data)
             exponent = poly1.data(cont1).exponent;
             
-            hash = sum(base.*exponent);
-            indresul = find(indhash==hash);
+            indresul = gethash(exponent,indhash,base);
             
             resul.data(indresul).exponent = exponent;
             resul.data(indresul).value = resul.data(indresul).value + (poly1.data(cont1).value*poly2.data(1).value);
             if (value1 == 1)
                 if (~isempty(resul.opcode{indresul}))
-                    resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop);%%%%%%%%
-                    resul.opcode{indresul} = strcat(resul.opcode{indresul},poly2.opcode{1});%%%%%%%%%
+                    resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop);
+                    resul.opcode{indresul} = strcat(resul.opcode{indresul},poly2.opcode{1});
                 else
-                    resul.opcode{indresul} = poly2.opcode{1};%%%%%%%%%%%
+                    resul.opcode{indresul} = poly2.opcode{1};
                 end
             elseif (value1 == 2)
                 if (~isempty(resul.opcode{indresul}))
-                    resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop);%%%%%%%%%%
-                    resul.opcode{indresul} = strcat(resul.opcode{indresul},poly1.opcode{cont1});%%%%%%%%%
+                    resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop);
+                    resul.opcode{indresul} = strcat(resul.opcode{indresul},poly1.opcode{cont1});
                 else
-                    resul.opcode{indresul} = poly1.opcode{cont1};%%%%%%%%%%
+                    resul.opcode{indresul} = poly1.opcode{cont1};
                 end
             else
                 if (subtr)
@@ -199,30 +239,27 @@ if (op == '*')
     else %Both are polynomials
         for cont1=1:length(poly1.data)
             for cont2=1:length(poly2.data)
-                exponent = poly1.data(cont1).exponent + poly2.data(cont2).exponent;
-                
-                hash = sum(base.*exponent);
-                indresul = find(indhash==hash);
-                
-                if (indresul == 3)
-                    indresul;
+                for contsimplex = 1:length(poly1.data(cont1).exponent)
+                    exponent{contsimplex} = poly1.data(cont1).exponent{contsimplex} + poly2.data(cont2).exponent{contsimplex};
                 end
-
+                
+                indresul = gethash(exponent,indhash,base);
+                                
                 resul.data(indresul).exponent = exponent;
                 resul.data(indresul).value = resul.data(indresul).value + (poly1.data(cont1).value*poly2.data(cont2).value);
                 if (value1 == 1)
                     if (~isempty(resul.opcode{indresul}))
-                        resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop);%%%%%%%%%
-                        resul.opcode{indresul} = strcat(resul.opcode{indresul},poly2.opcode{cont2});%%%%%%%%%
+                        resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop);
+                        resul.opcode{indresul} = strcat(resul.opcode{indresul},poly2.opcode{cont2});
                     else
-                        resul.opcode{indresul} = poly2.opcode{cont2};%%%%%%%%
+                        resul.opcode{indresul} = poly2.opcode{cont2};
                     end
                 elseif (value1 == 2)
                     if (~isempty(resul.opcode{indresul}))
-                        resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop);%%%%%%%
-                        resul.opcode{indresul} = strcat(resul.opcode{indresul},poly1.opcode{cont1});%%%%%%%%%%
+                        resul.opcode{indresul} = strcat(resul.opcode{indresul},linkop);
+                        resul.opcode{indresul} = strcat(resul.opcode{indresul},poly1.opcode{cont1});
                     else
-                        resul.opcode{indresul} = poly1.opcode{cont1};%%%%%%%%%%
+                        resul.opcode{indresul} = poly1.opcode{cont1};
                     end
                 else
                     if (subtr)
@@ -270,13 +307,14 @@ if (op == '*')
 end
 if ((op == '+') || (op == '-'))
     for cont=1:length(poly1.data)
-        hash = sum(base.*poly1.data(cont).exponent);
-        indresul = find(indhash==hash);
+        
+        indresul = gethash(poly1.data(cont).exponent,indhash,base);
+        
         resul.data(indresul).exponent = poly1.data(indresul).exponent;
         resul.data(indresul).value = resul.data(indresul).value + poly1.data(indresul).value;
-
-        hash = sum(base.*poly2.data(cont).exponent);
-        indresul = find(indhash==hash);
+        
+        indresul = gethash(poly2.data(cont).exponent,indhash,base);
+        
         if (op == '+')
             resul.data(indresul).value = resul.data(indresul).value + poly2.data(indresul).value;
             resul.opcode{indresul} = strcat(strcat(poly1.opcode{cont},'+'),poly2.opcode{cont});
@@ -287,6 +325,18 @@ if ((op == '+') || (op == '-'))
     end
 end
 
-resul.vertices = max(poly1.vertices,poly2.vertices);
+resul.vertices = vertices;
 
+return
+
+
+function index = gethash(exponent,hash,base)
+vetexponent = [];
+for contsimplex=1:(length(exponent)) 
+    if (sum(exponent{contsimplex}) > 0)
+        vetexponent = [vetexponent exponent{contsimplex}];
+    end
+end
+
+index = find(sum(base.*(vetexponent))==hash);
 return

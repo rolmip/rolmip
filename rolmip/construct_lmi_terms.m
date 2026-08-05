@@ -26,7 +26,7 @@ elseif (nargin == 2)
     vertices = 0;
     conti = 1;
     contj = 1;
-    while ((vertices == 0) && (conti <= size(Term,1)) && (contj <= size(Term,2)))
+    while ((sum(vertices) == 0) && (conti <= size(Term,1)) && (contj <= size(Term,2)))
         if (~isempty(Term{conti,contj}))
             vertices = Term{conti,contj}.vertices;
         else
@@ -92,33 +92,66 @@ if ((shape == 1) && (length(Term) > 1) && (~isempty(Term{2,1})))
     end
 end
 
-if (shape == 1)
-    %Optimize the operations for triangular matrices, which is the
-    %most common case.
-    %First step: determine the highest degree from all the terms
+
+
+
+
+%First step: determine the highest degree from all the terms
+
+polyone = rolmip('getvar','1'); %Save the current '1' polynomial
+for contsimplex=1:length(vertices)
     for conti=1:size(Term,1)
         for contj = conti:size(Term,2)
-            deg(conti,contj) = sum(Term{conti,contj}.data(1).exponent);
+            deg{contsimplex}(conti,contj) = sum(Term{conti,contj}.data(1).exponent{contsimplex});
         end
     end
-    maxdeg = max(max(deg));
-
-    if (vertices > 0)
+    maxdeg(contsimplex) = max(max(deg{contsimplex}));
+    
+    if (vertices(contsimplex) > 0)
         %one = sum_{i=1}^{vertices} alpha_i = 1
-        one = poly_struct(ones(1,vertices),'1',vertices,1);
+        clear M
+        degaux = [1 zeros(1,vertices(contsimplex)-1)];
+        for cont1 = 1:vertices(contsimplex)
+            for cont2 = 1:length(vertices)
+                if (cont2 == contsimplex)
+                    M{cont1}{cont2} = degaux;
+                    degaux = circshift(degaux,[0 1]);
+                else
+                    M{cont1}{cont2} = [0];
+                end
+            end
+            M{cont1}{cont2+1} = 1;
+        end
         
-        %Second step: Make the polynomials homogeneous to the highest degree
+        degdef = zeros(1,length(vertices));
+        degdef(contsimplex) = 1;
+        one{contsimplex} = poly_struct(M,'1',vertices,degdef);
+    end
+end
+
+%Second step: Make the polynomials homogeneous to the highest degree
+for contsimplex=1:length(vertices)
+    if (vertices(contsimplex) > 0)
         for conti=1:size(Term,1)
             for contj = conti:size(Term,2)
-                contdeg = deg(conti,contj);
-                while (contdeg < maxdeg)
-                    Term{conti,contj} = operation_poly(Term{conti,contj},one,'*');
+                contdeg = deg{contsimplex}(conti,contj);
+                while (contdeg < maxdeg(contsimplex))
+                    Term{conti,contj} = operation_poly(Term{conti,contj},one{contsimplex},'*');
                     contdeg = contdeg + 1;
                 end
             end
         end
     end
+end
 
+if (~isempty(polyone))  %Restore the '1' polynomial
+    rolmip('setvar',polyone);
+end
+
+if (shape == 1)
+    %Optimize the operations for triangular matrices, which is the
+    %most common case.
+    
     %Completing the matrix in order to make it full square
     for conti = 1:size(Term,1)
         for contj = conti+1:size(Term,2)
@@ -134,33 +167,8 @@ if (shape == 1)
             end
         end
     end
-    
-else %Rectangular or full square 
-   %First step: determine the highest degree from all the terms
-    for conti=1:size(Term,1)
-        for contj = 1:size(Term,2)
-            deg(conti,contj) = sum(Term{conti,contj}.data(1).exponent);
-        end
-    end
-    maxdeg = max(max(deg));
-
-    if (vertices > 0)
-        %one = sum_{i=1}^{vertices} alpha_i = 1
-        one = poly_struct(ones(1,vertices),'1',vertices,1);
-        
-        %Second step: Make the polynomials homogeneous to the highest degree
-        for conti=1:size(Term,1)
-            for contj = 1:size(Term,2)
-                contdeg = deg(conti,contj);
-                while (contdeg < maxdeg)
-                    Term{conti,contj} = operation_poly(Term{conti,contj},one,'*');
-                    contdeg = contdeg + 1;
-                end
-            end
-        end
-    end
 end
-
+    
 
 %Third step: construct the LMIs
 if (~isempty(ineq))
