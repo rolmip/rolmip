@@ -1,4 +1,18 @@
 function B = vertcat(varargin)
+%ROLMIPopt: delega ao builtin quando nenhum argumento e rolmipvar
+%(robustez de despacho, necessaria no Octave).
+isrol = false;
+for iarg = 1:nargin
+    if isa(varargin{iarg}, 'rolmipvar')
+        isrol = true;
+        break
+    end
+end
+if ~isrol
+    B = builtin('vertcat', varargin{:});
+    return
+end
+
 %VERTCAT (overloaded)
 %
 % Author: Alexandre Felipe

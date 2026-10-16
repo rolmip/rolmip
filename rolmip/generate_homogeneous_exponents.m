@@ -1,17 +1,11 @@
 function [exponents] = generate_homogeneous_exponents(vertices,degree)
 % [exponents] = generate_homogeneous_exponents(vertices,degree)
-% Recursive algorithm to generate the exponents of a homogeneous polynomial
-exponents = [];
-if (vertices == 1)
-    exponents = degree;
-    return
-end
-if (degree == 0)
-    exponents = zeros(1,vertices);
-    return
-end
-for cont=degree:-1:0
-    [expaux] = generate_homogeneous_exponents(vertices-1,degree-cont);
-    exponents = [exponents; cont*ones(size(expaux,1),1) expaux];
-end
+% Gera os expoentes de um polinomio homogeneo, na mesma ordem da versao
+% original do ROLMIP.
+%
+% ROLMIPopt: a geracao recursiva com concatenacao repetida foi substituida
+% por construcao iterativa prealocada e memoizada (ROLMIPOPT_EXPTABLE) --
+% cada tabela (vertices,degree) e construida uma unica vez por sessao.
+
+exponents = rolmipopt_exptable(vertices, degree);
 return

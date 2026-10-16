@@ -1,4 +1,11 @@
 function varargout = diff(varargin)
+%ROLMIPopt: delega ao builtin quando o argumento nao e rolmipvar
+%(robustez de despacho, necessaria no Octave).
+if nargin >= 1 && ~isa(varargin{1}, 'rolmipvar') && ~isstruct(varargin{1})
+    [varargout{1:max(nargout,1)}] = builtin('diff', varargin{:});
+    return
+end
+
 % Procedure to calculate the time-derivate of a time-varying
 % parameter-dependent matrix.
 %
@@ -36,7 +43,7 @@ else
         dotbounds = varargin{2};
         labelout = strcat('dot_',polyin.label);
     elseif (nargin == 3)
-        if (isstr(varargin{2}))
+        if (ischar(varargin{2}))
             dotbounds = varargin{3};
             labelout = varargin{2};
         else
@@ -97,6 +104,8 @@ end
 
 [jump,exptable] = create_hash_table(vertices,degree);
 
+docodes = strcmp(rolmipopt('codegen'), 'on'); %ROLMIPopt
+
 % Compose the polynomial structure of the derivative
 poly.label = labelout;
 poly.vertices = vertices;
@@ -145,22 +154,27 @@ for cont=1:length(polyin.data)
                             poly.data(indresul).value = poly.data(indresul).value + val*H{contsimplex}(contexp,contderiv)*polyin.data(cont).value;
                             poly.data(indresul).exponent = exponents;
                             
-                             %Update the opcode and opcodein
-                            if ~((indresul > length(poly.opcodein)) || (isempty(poly.opcodein{indresul})))
-                                %If the opcodein already exists
-                                poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'+');
+                             %Update the opcode and opcodein (ROLMIPopt: apenas com codegen on)
+                            if (docodes)
+                                if ~((indresul > length(poly.opcodein)) || (isempty(poly.opcodein{indresul})))
+                                    %If the opcodein already exists
+                                    poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'+');
+                                else
+                                    poly.opcodein{indresul} = [];
+                                end
+                                if ((indresul > length(poly.opcode)) || (isempty(poly.opcode{indresul})))
+                                    poly.opcode{indresul} = strcat(labelout,strcat('#D',num2str(indresul)));
+                                end
+                                if (val~=1)
+                                    poly.opcodein{indresul} = strcat(strcat(poly.opcodein{indresul},num2str(val)),'*');
+                                end
+                                poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'H[');
+                                poly.opcodein{indresul} = strcat(strcat(strcat(strcat(poly.opcodein{indresul},strcat(strcat(num2str(contexp),','),num2str(contderiv))),']#H'),num2str(contsimplex)),'*');
+                                poly.opcodein{indresul} = strcat(poly.opcodein{indresul},polyin.opcode{cont});
                             else
-                                poly.opcodein{indresul} = [];
+                                poly.opcode{indresul} = '';
+                                poly.opcodein{indresul} = '';
                             end
-                            if ((indresul > length(poly.opcode)) || (isempty(poly.opcode{indresul})))
-                                poly.opcode{indresul} = strcat(labelout,strcat('#D',num2str(indresul)));
-                            end
-                            if (val~=1)
-                                poly.opcodein{indresul} = strcat(strcat(poly.opcodein{indresul},num2str(val)),'*');
-                            end
-                            poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'H[');
-                            poly.opcodein{indresul} = strcat(strcat(strcat(strcat(poly.opcodein{indresul},strcat(strcat(num2str(contexp),','),num2str(contderiv))),']#H'),num2str(contsimplex)),'*');
-                            poly.opcodein{indresul} = strcat(poly.opcodein{indresul},polyin.opcode{cont});
                             
                             isok = false;
                             if (isempty(indderivhomog))
@@ -261,7 +275,7 @@ else
                 count=0;
                 for r=1:size(H,2);
                     v=H(:,r);
-                    if roundn(v-col,-8) == zeros(N,1);
+                    if all(abs(v-col) < 1e-8);
                         count=count+1;
                     end
                 end
@@ -329,11 +343,16 @@ end
 return
 
 function index = gethash(exponent,exptable,jump)
+% ROLMIPopt: indexacao combinatoria O(v) (ROLMIPOPT_INDEX) no lugar da
+% busca linear com find/histc/repmat da versao original.
 index = 0;
-for contsimplex=1:(length(exponent)) 
+for contsimplex=1:(length(exponent))
     if (length(exptable{contsimplex}) > 0)
-        [i,j] = find(exptable{contsimplex} - repmat(exponent{contsimplex},size(exptable{contsimplex},1),1) == 0);
-        index = index + (find(histc(i,1:size(exptable{contsimplex},1)) == size(exptable{contsimplex},2)) - 1)*jump(contsimplex);
+        e = exponent{contsimplex};
+        if (length(e) < size(exptable{contsimplex},2))
+            e = zeros(1,size(exptable{contsimplex},2)); %convencao [0]
+        end
+        index = index + (rolmipopt_index(e) - 1)*jump(contsimplex);
     end
 end
 index = index + 1;

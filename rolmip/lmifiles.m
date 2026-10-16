@@ -52,7 +52,7 @@ if (strcmp(action,'insert') || strcmp(action,'i'))
                 opt = strcat(opt,',');
             end
 
-            if (isstr(varargin{cont}))
+            if (ischar(varargin{cont}))
                 opt = strcat(opt,'''');
                 opt = strcat(opt,varargin{cont});
                 opt = strcat(opt,'''');

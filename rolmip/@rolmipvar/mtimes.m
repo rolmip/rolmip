@@ -1,4 +1,11 @@
 function Z = mtimes(X, Y)
+%ROLMIPopt: delega ao builtin quando o(s) argumento(s) nao sao rolmipvar
+%(robustez de despacho, necessaria no Octave).
+if ~isa(X, 'rolmipvar') && ~isa(Y, 'rolmipvar')
+    Z = builtin('mtimes', X, Y);
+    return
+end
+
 %MTIMES (overloaded)
 %
 % Author: Alexandre Felipe

@@ -1,4 +1,11 @@
 function Z = uminus(X, Y)
+%ROLMIPopt: delega ao builtin quando o(s) argumento(s) nao sao rolmipvar
+%(robustez de despacho, necessaria no Octave).
+if ~isa(X, 'rolmipvar')
+    Z = builtin('uminus', X);
+    return
+end
+
 %MINUS (overloaded)
 %
 % Author: Alexandre Felipe

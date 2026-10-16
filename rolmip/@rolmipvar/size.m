@@ -1,4 +1,17 @@
-function varargout = size(X)
+function varargout = size(X, varargin)
+%size (overloaded)
+%ROLMIPopt: delega ao builtin quando o argumento nao e rolmipvar (robustez
+%de despacho, necessaria no Octave) e passa a aceitar size(poly,dim).
+if ~isa(X, 'rolmipvar')
+    [varargout{1:max(nargout,1)}] = builtin('size', X, varargin{:});
+    return
+end
+if ~isempty(varargin)
+    d = X.dims;
+    varargout{1} = d(varargin{1});
+    return
+end
+
 %size (overloaded)
 %
 % Author: Alexandre 

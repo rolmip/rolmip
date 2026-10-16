@@ -1,4 +1,18 @@
 function B = horzcat(varargin)
+%ROLMIPopt: delega ao builtin quando nenhum argumento e rolmipvar
+%(robustez de despacho, necessaria no Octave).
+isrol = false;
+for iarg = 1:nargin
+    if isa(varargin{iarg}, 'rolmipvar')
+        isrol = true;
+        break
+    end
+end
+if ~isrol
+    B = builtin('horzcat', varargin{:});
+    return
+end
+
 %HORZCAT (overloaded)
 %
 % Author: Alexandre Felipe
