@@ -7,5 +7,11 @@ function [exponents] = generate_homogeneous_exponents(vertices,degree)
 % por construcao iterativa prealocada e memoizada (ROLMIPOPT_EXPTABLE) --
 % cada tabela (vertices,degree) e construida uma unica vez por sessao.
 
+exponents = [];
+if (vertices == 0)
+    exponents = 0;
+    return
+end
 exponents = rolmipopt_exptable(vertices, degree);
+
 return
