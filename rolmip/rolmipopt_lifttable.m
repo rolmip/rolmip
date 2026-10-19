@@ -12,18 +12,11 @@ function [L, w] = rolmipopt_lifttable(vertices, degree, delta)
 %   acumular data(L(r,s)) += w(s)*data(r) -- uma unica passada, em vez das
 %   delta multiplicacoes polinomiais completas do homogenize original.
 
-persistent cache
-if isempty(cache)
-    cache = struct();
-end
-key = sprintf('k%d_%d_%d', vertices, degree, delta);
-if isfield(cache, key)
-    L = cache.(key).L;
-    w = cache.(key).w;
-    return
-end
-
+% Cache the weights only: the product map is already cached centrally.
 L = rolmipopt_prodtable(vertices, degree, delta);
+key = sprintf('lift_%d_%d', vertices, delta);
+[w, hit] = rolmipopt_cache('get', key);
+if hit, return; end
 F = rolmipopt_exptable(vertices, delta);
 mf = size(F,1);
 P = rolmipopt_pascal(delta + vertices);
@@ -39,5 +32,5 @@ for s = 1:mf
     end
     w(s) = val;
 end
-cache.(key) = struct('L', L, 'w', w);
+rolmipopt_cache('put', key, w);
 end

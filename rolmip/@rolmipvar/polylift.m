@@ -57,14 +57,14 @@ dims = size(polyin.data(1).value);
 Z = zeros(dims);
 %Create a zero-valued polynomial
 expn = cell(1,ns);
+resul.data = repmat(struct('exponent', {cell(1,ns)}, 'value', Z), 1, mR);
+resul.opcode = repmat({''}, 1, mR);
 contexp = ones(1,ns+1);
 for n=1:mR
     for cs=1:ns
         expn{cs} = TR{cs}(contexp(cs),:);
     end
     resul.data(n).exponent = expn;
-    resul.data(n).value = Z;
-    resul.opcode{n} = '';
     contexp(1) = contexp(1) + 1;
     aux = 1;
     while ((aux <= ns) && (contexp(aux) > szR(aux)))

@@ -196,7 +196,10 @@ end
 
 %Third step: construct the LMIs
 if (~isempty(ineq))
-    LMIs = set([]);
+    if strcmp(ineq,'>') || strcmp(ineq,'<')
+        warning('ROLMIPopt:strict', 'Strict inequality converted to a non-strict inequality.');
+    end
+    LMIs = [];
     
     for contdata=1:length(Term{1,1}.data)
         T = [];
@@ -209,13 +212,13 @@ if (~isempty(ineq))
         end
 
         if (strcmp(ineq,'>'))
-            LMIs = LMIs + set(T>0);
+            LMIs = [LMIs, T>=0];
         elseif (strcmp(ineq,'<'))
-            LMIs = LMIs + set(T<0);
+            LMIs = [LMIs, T<=0];
         elseif (strcmp(ineq,'>='))
-            LMIs = LMIs + set(T>=0);
+            LMIs = [LMIs, T>=0];
         elseif (strcmp(ineq,'<='))
-            LMIs = LMIs + set(T<=0);
+            LMIs = [LMIs, T<=0];
         end
     end
 elseif (strcmp(label,'Term'))

@@ -13,6 +13,8 @@ end
 Z = X;
 for i = 1:length(X.data)
   Z.data(i).value = -(X.data(i).value);
-  Z.opcode{i} = strcat('-', X.opcode{i});
+  if ~isempty(X.opcode{i})
+      Z.opcode{i} = strcat('-', X.opcode{i});
+  end
 end
 Z.label = strcat('-', X.label);

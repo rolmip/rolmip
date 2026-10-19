@@ -1,28 +1,25 @@
 function R = rolmipopt_prodtable(vertices, deg1, deg2)
-% ROLMIPOPT_PRODTABLE  Tabela de indices do produto, memorizada.
-%   R = rolmipopt_prodtable(v,d1,d2) retorna a matriz (m1 x m2) tal que
-%   R(a,b) e a posicao, na tabela canonica de grau d1+d2, do expoente
-%   T1(a,:) + T2(b,:). Com ela, a indexacao do produto de dois polinomios
-%   torna-se uma consulta vetorizada -- substitui as chamadas 'gethash'
-%   dentro do laco duplo do operation_poly original.
-
-persistent cache
-if isempty(cache)
-    cache = struct();
-end
-key = sprintf('k%d_%d_%d', vertices, deg1, deg2);
-if isfield(cache, key)
-    R = cache.(key);
+% Product destinations in the validated canonical monomial order.
+% Only one orientation is cached. Pair exponents are built in chunks;
+% the returned full double matrix itself still requires 8*m1*m2 bytes.
+if deg1 > deg2
+    R = rolmipopt_prodtable(vertices,deg2,deg1).';
     return
 end
-
-T1 = rolmipopt_exptable(vertices, deg1);
-T2 = rolmipopt_exptable(vertices, deg2);
-m1 = size(T1,1);
-m2 = size(T2,1);
-% somas de todos os pares, em bloco
-E = kron(T1, ones(m2,1)) + repmat(T2, m1, 1);
-idx = rolmipopt_index(E);
-R = reshape(idx, m2, m1).';   % R(a,b) <-> par (T1(a), T2(b))
-cache.(key) = R;
+key = sprintf('prod_%d_%d_%d',vertices,deg1,deg2);
+[R,hit] = rolmipopt_cache('get',key);
+if hit,return;end
+T1 = rolmipopt_exptable(vertices,deg1);
+T2 = rolmipopt_exptable(vertices,deg2);
+m1 = size(T1,1); m2 = size(T2,1);
+R = zeros(m1,m2);
+% Conservative working-set estimate for exponent arrays and index vectors.
+chunk = max(1,floor(rolmipopt('workbytes')/(8*(3*size(T1,2)+8))));
+for first=1:chunk:numel(R)
+    k = (first:min(first+chunk-1,numel(R))).';
+    a = mod(k-1,m1)+1; b = floor((k-1)/m1)+1;
+    E = T1(a,:)+T2(b,:);
+    R(k) = rolmipopt_index(E);
+end
+rolmipopt_cache('put',key,R);
 end

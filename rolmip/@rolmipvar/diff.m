@@ -67,15 +67,6 @@ if (~iscell(dotbounds))
     clear aux;
 end
 
-%Verify if 0 \in dotbounds{i}
-for i=1:length(dotbounds)
-    for cont=1:size(dotbounds{i},1)
-        if (dotbounds{i}(cont,1)*dotbounds{i}(cont,2) > 0)
-            error('The bounds for the derivatives must contain the value 0 in order to generate a compact polytope');
-        end
-    end
-end
-
 if (sum(polyin.vertices) == 0)
     %In this case, the polynomial is a constant matrix
     varargout{1} = rolmipvar(zeros(size(polyin.data(1).value)),labelout);
@@ -275,7 +266,8 @@ else
                 count=0;
                 for r=1:size(H,2);
                     v=H(:,r);
-                    if all(abs(v-col) < 1e-8);
+                    % Preserve the rounding policy of the selected local ROLMIP base.
+                    if all(round((v-col)*1e8)*1e-8 == 0);
                         count=count+1;
                     end
                 end

@@ -10,6 +10,7 @@ function h = homogenize(varargin)
 %(HOMOGENIZE_CODEGEN), preservando as strings 'opcode' para o LMIFILES.
 
 if strcmp(rolmipopt('codegen'), 'on')
+    rolmipopt_require_opcodes(varargin);
     h = homogenize_codegen(varargin{:});
     return
 end

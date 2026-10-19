@@ -13,11 +13,19 @@ function varargout = rolmipopt(varargin)
 %   rolmipopt('clearcache') limpa as tabelas memoizadas (expoentes,
 %       indices, produtos e homogeneizacao). Normalmente desnecessario.
 %
+%   rolmipopt('cachebytes', n) sets the shared table cache payload budget
+%       (default 64 MiB; zero disables storage). Shrinking evicts entries.
+%   rolmipopt('workbytes', n) sets the temporary chunk size target
+%       (default 8 MiB, minimum 1024 bytes), not a process memory limit.
+%   rolmipopt('cachestats') returns bytes, entries, hits, misses, evictions
+%       and limit. Accounting excludes MATLAB overhead and Pascal tables.
+%   rolmipopt('cachebytes') / rolmipopt('workbytes') return current values.
+%
 % ROLMIPopt - versao otimizada do ROLMIP (Robust LMI Parser).
 
 persistent opts
 if isempty(opts)
-    opts = struct('codegen', 'off');
+    opts = struct('codegen', 'off', 'cachebytes', 64*1024^2, 'workbytes', 8*1024^2);
 end
 
 if nargin == 0
@@ -35,8 +43,22 @@ switch lower(varargin{1})
         else
             varargout{1} = opts.codegen;
         end
+    case {'cachebytes','workbytes'}
+        name = lower(varargin{1});
+        if nargin == 1
+            varargout{1} = opts.(name);
+        else
+            validateattributes(varargin{2}, {'numeric'}, {'scalar','real','finite','integer','nonnegative'});
+            if strcmp(name,'workbytes') && varargin{2} < 1024
+                error('ROLMIP:MemoryBudget','workbytes must be at least 1024 bytes.');
+            end
+            opts.(name) = double(varargin{2});
+            if strcmp(name,'cachebytes'),rolmipopt_cache('trim');end
+        end
+    case 'cachestats'
+        varargout{1} = rolmipopt_cache('stats');
     case 'clearcache'
-        clear rolmipopt_pascal rolmipopt_exptable rolmipopt_prodtable ...
+        clear rolmipopt_cache rolmipopt_index rolmipopt_pascal rolmipopt_exptable rolmipopt_prodtable ...
               rolmipopt_lifttable
     otherwise
         error('rolmipopt: opcao desconhecida ''%s''.', varargin{1});

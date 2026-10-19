@@ -19,6 +19,7 @@ function LMIs = construct_lmi_terms(varargin)
 %    (CONSTRUCT_LMI_TERMS_CODEGEN), que preserva opcodes para o LMIFILES.
 
 if strcmp(rolmipopt('codegen'), 'on')
+    rolmipopt_require_opcodes(varargin{1});
     LMIs = construct_lmi_terms_codegen(varargin{:});
     return
 end

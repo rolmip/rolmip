@@ -156,6 +156,6 @@ fprintf('\n');
 if (nfail == 0)
     fprintf('ROLMIPOPT_TEST: todos os testes passaram.\n');
 else
-    fprintf('ROLMIPOPT_TEST: %d teste(s) FALHARAM.\n', nfail);
+    error('ROLMIP:TestFailure', 'ROLMIPOPT_TEST: %d teste(s) FALHARAM.', nfail);
 end
 end

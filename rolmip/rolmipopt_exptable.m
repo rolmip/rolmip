@@ -3,28 +3,21 @@ function T = rolmipopt_exptable(vertices, degree)
 %   T = rolmipopt_exptable(v,d) retorna a matriz (nchoosek(v+d-1,d) x v)
 %   com os expoentes na MESMA ordem do generate_homogeneous_exponents do
 %   ROLMIP original, porem gerada iterativamente (com prealocacao) e
-%   armazenada em cache persistente: cada par (v,d) e construido uma unica
-%   vez por sessao.
+%   armazenada no cache compartilhado com limite de memoria (LRU).
+%   Entradas descartadas sao reconstruidas quando necessarias.
 
-persistent cache
-if isempty(cache)
-    cache = struct();
-end
-
-key = sprintf('k%d_%d', vertices, degree);
-if isfield(cache, key)
-    T = cache.(key);
-    return
-end
+key = sprintf('exp_%d_%d', vertices, degree);
+[T, hit] = rolmipopt_cache('get', key);
+if hit, return; end
 
 if vertices <= 1
     T = degree;              % identico ao original (escalar)
-    cache.(key) = T;
+    rolmipopt_cache('put', key, T);
     return
 end
 if degree == 0
     T = zeros(1, vertices);
-    cache.(key) = T;
+    rolmipopt_cache('put', key, T);
     return
 end
 
@@ -51,5 +44,5 @@ while true
     e(j+1) = s;
 end
 T = T(1:row-1, :);
-cache.(key) = T;
+rolmipopt_cache('put', key, T);
 end

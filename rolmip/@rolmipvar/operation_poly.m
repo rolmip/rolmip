@@ -16,6 +16,7 @@ function [resul] = operation_poly(poly1,poly2,op)
 %versao original: a semantica e identica.
 
 if strcmp(rolmipopt('codegen'), 'on')
+    rolmipopt_require_opcodes({poly1, poly2});
     resul = operation_poly_codegen(poly1, poly2, op);
     return
 end
@@ -124,14 +125,14 @@ end
 Z = zeros(dims);
 
 expn = cell(1,ns);
+resul.data = repmat(struct('exponent', {cell(1,ns)}, 'value', Z), 1, mR);
+resul.opcode = repmat({''}, 1, mR);
 contexp = ones(1,ns+1);
 for n=1:mR
     for cs=1:ns
         expn{cs} = TR{cs}(contexp(cs),:);
     end
     resul.data(n).exponent = expn;
-    resul.data(n).value = Z;
-    resul.opcode{n} = '';
     contexp(1) = contexp(1) + 1;
     aux = 1;
     while ((aux <= ns) && (contexp(aux) > szR(aux)))
@@ -163,27 +164,76 @@ m1 = length(poly1.data);
 m2 = length(poly2.data);
 
 if (op == '*')
-    r1 = local_ranks(poly1, ns);
-    r2 = local_ranks(poly2, ns);
-    IND = ones(m1, m2);
-    for cs=1:ns
-        if (vertices(cs) > 1) && (szR(cs) > 1)
-            Rt = rolmipopt_prodtable(vertices(cs), deg1(cs), deg2(cs));
-            IND = IND + (Rt(r1(:,cs), r2(:,cs)) - 1)*jumpR(cs);
+    if prod(v1s) ~= 1 && prod(v2s) ~= 1 && v1s(2) ~= v2s(1)
+        error('ROLMIP:ProductDimensions', 'Inner matrix dimensions must agree.');
+    end
+    finiteInputs = true;
+    for k = 1:m1
+        value = poly1.data(k).value;
+        if isnumeric(value) && any(~isfinite(value(:))), finiteInputs = false; end
+    end
+    for k = 1:m2
+        value = poly2.data(k).value;
+        if isnumeric(value) && any(~isfinite(value(:))), finiteInputs = false; end
+    end
+    % Active support affects work only; retain the complete public grid.
+    active1 = true(1,m1); active2 = true(1,m2);
+    if finiteInputs
+        for c=1:m1
+            val=poly1.data(c).value;
+            active1(c)=~(isnumeric(val) && ~any(val(:)));
+        end
+        for c=1:m2
+            val=poly2.data(c).value;
+            active2(c)=~(isnumeric(val) && ~any(val(:)));
         end
     end
-    for c1=1:m1
-        val1 = poly1.data(c1).value;
-        if (isnumeric(val1) && ~any(val1(:)))
-            continue
-        end
-        for c2=1:m2
-            val2 = poly2.data(c2).value;
-            if (isnumeric(val2) && ~any(val2(:)))
-                continue
+    a1=find(active1); a2=find(active2);
+    if ~isempty(a1) && ~isempty(a2)
+        r1 = local_ranks(poly1, ns); r2 = local_ranks(poly2, ns);
+        budget=rolmipopt('workbytes');
+        maps=cell(1,ns); T1=cell(1,ns); T2=cell(1,ns);
+        for cs=1:ns
+            if vertices(cs)>1 && szR(cs)>1
+                T1{cs}=rolmipopt_exptable(vertices(cs),deg1(cs));
+                T2{cs}=rolmipopt_exptable(vertices(cs),deg2(cs));
+                pairs=size(T1{cs},1)*size(T2{cs},1);
+                if 8*pairs <= budget/ns && pairs <= 4*numel(a1)*numel(a2)
+                    maps{cs}=rolmipopt_prodtable(vertices(cs),deg1(cs),deg2(cs));
+                end
             end
-            k = IND(c1,c2);
-            resul.data(k).value = resul.data(k).value + val1*val2;
+        end
+        capacity=max(1,floor(budget/(8*(3*max(vertices)+12))));
+        nc=min(numel(a2),capacity);
+        nr=max(1,min(numel(a1),floor(capacity/nc)));
+        % If columns require chunks, nr=1. Thus accumulation order remains
+        % source row then source column, exactly as in the previous kernel.
+        for row=1:nr:numel(a1)
+            rows=a1(row:min(row+nr-1,numel(a1)));
+            for col=1:nc:numel(a2)
+                cols=a2(col:min(col+nc-1,numel(a2)));
+                IND=ones(numel(rows),numel(cols));
+                for cs=1:ns
+                    if vertices(cs)>1 && szR(cs)>1
+                        if ~isempty(maps{cs})
+                            local=maps{cs}(r1(rows,cs),r2(cols,cs));
+                        else
+                            ia=repmat(r1(rows,cs),numel(cols),1);
+                            ib=kron(r2(cols,cs),ones(numel(rows),1));
+                            E=T1{cs}(ia,:)+T2{cs}(ib,:);
+                            local=reshape(rolmipopt_index(E),numel(rows),numel(cols));
+                        end
+                        IND=IND+(local-1)*jumpR(cs);
+                    end
+                end
+                for i=1:numel(rows)
+                    val1=poly1.data(rows(i)).value;
+                    for j=1:numel(cols)
+                        k=IND(i,j);
+                        resul.data(k).value=resul.data(k).value+val1*poly2.data(cols(j)).value;
+                    end
+                end
+            end
         end
     end
 else  % '+' ou '-'

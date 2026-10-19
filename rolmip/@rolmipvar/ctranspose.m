@@ -23,6 +23,9 @@ end
 for i = 1:length(atual.data)
     X.data(i).value = (atual.data(i).value)';
     X.opcode{i} = strcat(pre,atual.opcode{i}, aft, char(39));
+    if isempty(atual.opcode{i}), X.opcode{i} = ''; end
 end
 X.label = [pre,atual.label,aft, char(39)];
 
+
+X.dims = size(X.data(1).value);

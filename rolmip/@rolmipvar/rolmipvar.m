@@ -263,6 +263,12 @@ if (polynomial)
     poly.bounds = bounds;
     poly.label = label;
 else
+    validateattributes(vertices, {'numeric'}, {'real','finite','vector','nonempty','integer','nonnegative'}, mfilename, 'vertices');
+    validateattributes(degree, {'numeric'}, {'real','finite','vector','nonempty','integer','nonnegative'}, mfilename, 'degree');
+    vertices = vertices(:).'; degree = degree(:).';
+    if numel(vertices) ~= numel(degree) || any(degree(vertices == 0) ~= 0)
+        error('ROLMIP:InvalidDegree', 'Degrees must match the simplexes; an absent simplex must have degree zero.');
+    end
     numtotal = 1; %numcoefs total
     if (nargin >= 5)
         %Define the variable
@@ -420,7 +426,14 @@ else
             idxtot = ones(nmon,1);
             for contsimplex=1:ns
                 for cont=1:nmon
-                    if (sum(M{cont}{contsimplex}) ~= degree(contsimplex))
+                    e = M{cont}{contsimplex};
+                    if ~isnumeric(e) || ~isreal(e) || isempty(e) || ~isrow(e) || ...
+                            any(~isfinite(e)) || any(e < 0) || any(e ~= fix(e)) || ...
+                            ~(numel(e) == max(1,vertices(contsimplex)) || ...
+                            (isscalar(e) && e == 0 && degree(contsimplex) == 0))
+                        error('ROLMIP:InvalidExponent', 'Exponents must be finite nonnegative integers of the simplex dimension.');
+                    end
+                    if (sum(e) ~= degree(contsimplex))
                         error('At least one exponent of the polynomial does not have the chosen degree');
                     end
                 end
