@@ -35,3 +35,8 @@ codegen/
 octave-workspace
 
 # End of https://www.toptal.com/developers/gitignore/api/matlab
+
+# Local validation artifacts
+__pycache__/
+*.py[cod]
+/validation/output/

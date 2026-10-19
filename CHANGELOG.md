@@ -1,3 +1,11 @@
+## Opt 3.4 (unreleased)
+
+- Correct derivative bounds handling, exponent validation, dimensions and export preflight.
+- Bound shared table cache storage and process polynomial products in chunks.
+- Add `rolmip_begin` / `[time,V,L] = rolmip_end(LMIs)` for construction timing and model statistics.
+- Add regression, memory and timer tests, with documented database validation and benchmarks.
+- Preserve the validated combinatorial monomial indexing and public coefficient representation.
+
 - [Version 3.3:](https://github.com/rolmip/rolmip/releases/tag/3.3) Compact polytope verification in diff; refactor of simplex representation in diff.
 - [Version 3.2:](https://github.com/rolmip/rolmip/releases/tag/3.2) Bug corrections.
 - [Version 3.1:](https://github.com/rolmip/rolmip/releases/tag/3.1) Bug corrections; Compatibility with Octave.
