@@ -31,6 +31,30 @@ P = rolmipvar({{0,[1 0],3},{0,[0 1],4}},'C',[3 2],[0 1]);
 assert(abs(evalpar(P,{[.2 .3 .5],[.25 .75]})-3.75)<1e-12);
 fprintf('[ok] F03/F04: dimensions, nonfinite values, exponent validation\n');
 
+% Degree-zero aliases must remain usable in both computational paths.
+for mode = {'off','on'}
+    rolmipopt('codegen',mode{1});
+    for v = [0 1 3]
+        for len = [1 2 3 4]
+            P = rolmipvar({{zeros(1,len),7}},'P',v,0);
+            ps = struct(P);
+            assert(isequal(ps.data(1).exponent{1},zeros(1,max(1,v))));
+            assert(isequal(coefs(P+P),14));
+            assert(isequal(coefs(P*P),49));
+        end
+    end
+    P = rolmipvar({{[0 0],[1 0],3},{zeros(1,4),[0 1],4}},'P',[3 2],[0 1]);
+    a = {[.2 .3 .5],[.25 .75]};
+    assert(abs(evalpar(P+P,a)-7.5)<1e-12);
+    assert(abs(evalpar(P*P,a)-3.75^2)<1e-12);
+    for e = {[0;0],[],[0 NaN],[0 Inf],[-1 1],[1 0]}
+        expect_error(@() rolmipvar({{e{1},7}},'bad',3,0),'');
+    end
+end
+rolmipopt('codegen','off');
+fprintf('[ok] degree-zero canonical storage, aliases and invalid inputs in both modes\n');
+
+
 P = rolmipvar(ones(2,3),'M');
 assert(isequal(size(P),[2 3]));assert(size(P,3)==1);
 assert(isequal(size(P,[1 2 3]),[2 3 1]));

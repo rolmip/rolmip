@@ -63,3 +63,22 @@ os exemplos, Octave, MPT e a certificação para graus muito elevados.
 A etapa seguinte, documentada em `MEMORIA_3_4.md`, passou a limitar a memória de mapas de produto e caches e a
 pré-alocar estruturas de saída e avaliar suporte ativo. Não foram introduzidas
 essas mudanças de representação/memória junto das correções de comportamento.
+
+## Normalização de expoentes de grau zero — 24/10/2026
+
+O construtor continua aceitando vetores-linha não vazios de zeros com qualquer
+comprimento, conforme a compatibilidade introduzida na revisão de Cristiano.
+Após validar os valores e a soma dos expoentes, passa a armazenar a linha
+canônica de `generate_homogeneous_exponents`: um zero por vértice, ou o escalar
+zero para um simplexo ausente. Graus positivos mantêm a validação anterior.
+
+Isso evita que objetos aceitos pelo construtor falhem em soma/multiplicação
+com `codegen=on`, quando o vetor fornecido tem comprimento diferente do número
+de vértices. A indexação combinatória e os coeficientes não foram alterados.
+
+A regressão cobre os dois modos, simplexos com 0, 1 e 3 vértices, quatro
+comprimentos de vetores nulos, operações multi-simplexo e entradas inválidas.
+A suíte completa passou, incluindo o SDP exportado resolvido com SeDuMi.
+A suíte ampliada `validation/test_robustness_opt34.m` concluiu 76 casos e
+4.277 verificações, sem falhas, com erro relativo máximo de 9,993e-16.
+Logs locais: `../../output/opt34-zero-normalization/`.

@@ -429,12 +429,16 @@ else
                     e = M{cont}{contsimplex};
                     if ~isnumeric(e) || ~isreal(e) || isempty(e) || ~isrow(e) || ...
                             any(~isfinite(e)) || any(e < 0) || any(e ~= fix(e)) || ...
-                            ~((numel(e) == max(1,vertices(contsimplex))  || sum(degree(contsimplex)) == 0) || ...
-                            (isscalar(e) && e == 0 && degree(contsimplex) == 0))  
+                            ~(numel(e) == max(1,vertices(contsimplex)) || degree(contsimplex) == 0)
                         error('ROLMIP:InvalidExponent', 'Exponents must be finite nonnegative integers of the simplex dimension.');
                     end
                     if (sum(e) ~= degree(contsimplex))
                         error('At least one exponent of the polynomial does not have the chosen degree');
+                    end
+                    if degree(contsimplex) == 0
+                        % Accept legacy zero-vector lengths, but store the same
+                        % canonical row used by both fast and codegen kernels.
+                        M{cont}{contsimplex} = exponents{contsimplex}(1,:);
                     end
                 end
                 if (size(exponents{contsimplex},1) > 1)
