@@ -1,4 +1,11 @@
-function Z = sum(X)
+function Z = sum(X, varargin)
+%SUM (overloaded)
+%ROLMIPopt: delega ao builtin quando o argumento nao e rolmipvar.
+if ~isa(X, 'rolmipvar')
+    Z = builtin('sum', X, varargin{:});
+    return
+end
+
 %SUM (overloaded)
 %
 % Author: Cristiano M. Agulhari

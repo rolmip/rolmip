@@ -80,7 +80,7 @@ elseif (nargin == 2)
     end
 elseif (nargin == 3) 
     M = varargin{1};
-    if (isstr(varargin{3}))
+    if (ischar(varargin{3}))
         if ((length(M) > 1) && (strcmp(varargin{3},'scalar')))
             error('The first input argument should be a scalar');
             poly = [];
@@ -263,6 +263,12 @@ if (polynomial)
     poly.bounds = bounds;
     poly.label = label;
 else
+    validateattributes(vertices, {'numeric'}, {'real','finite','vector','nonempty','integer','nonnegative'}, mfilename, 'vertices');
+    validateattributes(degree, {'numeric'}, {'real','finite','vector','nonempty','integer','nonnegative'}, mfilename, 'degree');
+    vertices = vertices(:).'; degree = degree(:).';
+    if numel(vertices) ~= numel(degree) || any(degree(vertices == 0) ~= 0)
+        error('ROLMIP:InvalidDegree', 'Degrees must match the simplexes; an absent simplex must have degree zero.');
+    end
     numtotal = 1; %numcoefs total
     if (nargin >= 5)
         %Define the variable
@@ -407,42 +413,63 @@ else
                 end
                 numelem = numelem*size(exponents{contsimplex},1);
             end
-            
-            for cont=1:length(M)
+
+            %ROLMIPopt: validacao e indexacao em lote -- uma chamada de
+            %ROLMIPOPT_INDEX por simplexo, em vez de um gethash por monomio.
+            nmon = length(M);
+            ns = length(vertices);
+            for cont=1:nmon
                 if (length(vertices) ~= length(M{cont})-1)
                     error('The definition of the matrices does not correspond to the informed number of simplexes');
-                else
-                    for contsimplex=1:(length(M{cont})-1)
-                        if (sum(M{cont}{contsimplex}) == degree(contsimplex))
-                            exponent{contsimplex} = M{cont}{contsimplex};
-                        else
-                            error('At least one exponent of the polynomial does not have the chosen degree');
-                            poly = [];
-                            return
-                        end
+                end
+            end
+            idxtot = ones(nmon,1);
+            for contsimplex=1:ns
+                for cont=1:nmon
+                    e = M{cont}{contsimplex};
+                    if ~isnumeric(e) || ~isreal(e) || isempty(e) || ~isrow(e) || ...
+                            any(~isfinite(e)) || any(e < 0) || any(e ~= fix(e)) || ...
+                            ~(numel(e) == max(1,vertices(contsimplex)) || degree(contsimplex) == 0)
+                        error('ROLMIP:InvalidExponent', 'Exponents must be finite nonnegative integers of the simplex dimension.');
+                    end
+                    if (sum(e) ~= degree(contsimplex))
+                        error('At least one exponent of the polynomial does not have the chosen degree');
+                    end
+                    if degree(contsimplex) == 0
+                        % Accept legacy zero-vector lengths, but store the same
+                        % canonical row used by both fast and codegen kernels.
+                        M{cont}{contsimplex} = exponents{contsimplex}(1,:);
                     end
                 end
-                
-                
-                indresul = gethash(exponent,exponents,jump);                                
-                %indresul = gethash2(exponent,exponents,jump);                              
-                poly.data(indresul).exponent = exponent;
-                poly.data(indresul).value = M{cont}{length(M{cont})};
+                if (size(exponents{contsimplex},1) > 1)
+                    E = zeros(nmon, size(exponents{contsimplex},2));
+                    for cont=1:nmon
+                        E(cont,:) = M{cont}{contsimplex};
+                    end
+                    idxtot = idxtot + (rolmipopt_index(E) - 1)*jump(contsimplex);
+                end
             end
-            
+            for cont=1:nmon
+                exponent = cell(1,ns);
+                for contsimplex=1:ns
+                    exponent{contsimplex} = M{cont}{contsimplex};
+                end
+                poly.data(idxtot(cont)).exponent = exponent;
+                poly.data(idxtot(cont)).value = M{cont}{length(M{cont})};
+            end
+
             %Insert the zero-monomials
-            
+            %(ROLMIPopt: a enumeracao abaixo segue a ordem canonica, logo o
+            %indice do monomio e o proprio contador -- sem gethash)
             contexp = ones(1,length(vertices)+1);
             for conttotal=1:numelem
                 exponent = [];
-                for contsimplex=1:(length(M{cont})-1)
+                for contsimplex=1:ns
                     exponent{contsimplex} = exponents{contsimplex}(contexp(contsimplex),:);
                 end
-                
-                indresul = gethash(exponent,exponents,jump);
-                if ((indresul > length(poly.data)) || (isempty(poly.data(indresul).value)))
-                    poly.data(indresul).exponent = exponent;
-                    poly.data(indresul).value = zeros(size(M{1}{length(M{1})}));
+                if ((conttotal > length(poly.data)) || (isempty(poly.data(conttotal).value)))
+                    poly.data(conttotal).exponent = exponent;
+                    poly.data(conttotal).value = zeros(size(M{1}{length(M{1})}));
                 end
                 contexp(1) = contexp(1) + 1;
                 aux = 1;
@@ -464,10 +491,10 @@ else
     %if (sum(sum(isnan(double(poly.data(1).value)))) > 0)
         %if (isnan(double(poly.data(1).value(1,1))))
         if (scalar)
-            poly.opcode{1} = strcat(poly.label,'#S1');
+            poly.opcode{1} = sprintf('%s#S1', poly.label); %ROLMIPopt
         else
             for cont=1:length(poly.data)
-                poly.opcode{cont} = strcat(strcat(poly.label,'#V'),num2str(cont));
+                poly.opcode{cont} = sprintf('%s#V%d', poly.label, cont); %ROLMIPopt
             end
         end
     else
@@ -478,16 +505,16 @@ else
             M = M{1};
         end
         if (scalar)
-            poly.opcode{1} = strcat(poly.label,'#K1');
+            poly.opcode{1} = sprintf('%s#K1', poly.label); %ROLMIPopt
         elseif ((nargin == 2) && (sum(sum(M)) == 0))
             %Zero matrix
-            poly.opcode{1} = strcat(poly.label,'#P1');
+            poly.opcode{1} = sprintf('%s#P1', poly.label); %ROLMIPopt
         elseif ((nargin == 2) && (size(M,1) == size(M,2)) && (sum(sum(M-eye(length(M)))) == 0))
             %Identity matrix
-            poly.opcode{1} = strcat(poly.label,'#P1');
+            poly.opcode{1} = sprintf('%s#P1', poly.label); %ROLMIPopt
         else
             for cont=1:length(poly.data)
-                poly.opcode{cont} = strcat(strcat(poly.label,'#C'),num2str(cont));
+                poly.opcode{cont} = sprintf('%s#C%d', poly.label, cont); %ROLMIPopt
             end
         end
     end
@@ -504,11 +531,16 @@ return
 
 %__________________________________________________________________________
 function index = gethash(exponent,exptable,jump)
+% ROLMIPopt: indexacao combinatoria O(v) (ROLMIPOPT_INDEX) no lugar da
+% busca linear com find/histc/repmat da versao original.
 index = 0;
-for contsimplex=1:(length(exponent)) 
+for contsimplex=1:(length(exponent))
     if (length(exptable{contsimplex}) > 0)
-        [i,j] = find(exptable{contsimplex} - repmat(exponent{contsimplex},size(exptable{contsimplex},1),1) == 0);
-        index = index + (find(histc(i,1:size(exptable{contsimplex},1)) == size(exptable{contsimplex},2)) - 1)*jump(contsimplex);
+        e = exponent{contsimplex};
+        if (length(e) < size(exptable{contsimplex},2))
+            e = zeros(1,size(exptable{contsimplex},2)); %convencao [0]
+        end
+        index = index + (rolmipopt_index(e) - 1)*jump(contsimplex);
     end
 end
 index = index + 1;
@@ -536,24 +568,8 @@ return
 
 %__________________________________________________________________________
 function numcoefs = calccoefs(vert,deg)
-
-if ((vert <= 2) && (deg <= 2))
-    numcoefs = (factorial(vert + deg - 1))/(factorial(deg)*factorial(vert-1));
-else
-    aux = 1;
-    cont = 1;
-    if (vert > deg)
-        while ((vert+deg-cont) > (vert-1))
-            aux = aux*(vert+deg-cont);
-            cont = cont + 1;
-        end
-        numcoefs = aux/factorial(deg);
-    else
-        while ((vert+deg-cont) > (deg))
-            aux = aux*(vert+deg-cont);
-            cont = cont+1;
-        end
-        numcoefs = aux/factorial(vert-1);
-    end
-end
+% ROLMIPopt: binomial inteiro exato nchoosek(vert+deg-1,deg) via tabela de
+% Pascal (ROLMIPOPT_PASCAL), sem fatoriais em double.
+P = rolmipopt_pascal(vert+deg);
+numcoefs = P(vert+deg, deg+1);
 return

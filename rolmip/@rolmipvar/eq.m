@@ -1,4 +1,11 @@
 function out = eq(A,B)
+%ROLMIPopt: delega ao builtin quando o(s) argumento(s) nao sao rolmipvar
+%(robustez de despacho, necessaria no Octave).
+if ~isa(A, 'rolmipvar') && ~isa(B, 'rolmipvar')
+    out = builtin('eq', A, B);
+    return
+end
+
 % Sets equality conditions on rolmipvar variables
 
 out = [];

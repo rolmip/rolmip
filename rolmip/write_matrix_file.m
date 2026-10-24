@@ -1,8 +1,10 @@
 function write_matrix_file(fid,Term,param)
-%Internal use function that writes, in the file identified by fid, the 
+%Internal use function that writes, in the file identified by fid, the
 %expression contained in the matrix Term of polynomial structures. The
 %variable 'param' is either an inequality (if a LMI is to be defined) or
 %the name of the auxiliar variable
+
+rolmipopt_require_opcodes(Term);
 
 for contdata=1:length(Term{1,1}.data)
     fprintf(fid,'clear Term; \n');

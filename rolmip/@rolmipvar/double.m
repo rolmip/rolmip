@@ -1,5 +1,12 @@
 function S = double(X)
 %DOUBLE (overloaded)
+%ROLMIPopt: delega ao builtin quando o argumento nao e rolmipvar.
+if ~isa(X, 'rolmipvar')
+    S = builtin('double', X);
+    return
+end
+
+%DOUBLE (overloaded)
 %
 % Author: Alexandre Felipe
 % 2014, Dec, 9

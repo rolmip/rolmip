@@ -1,4 +1,11 @@
-function S = round(X)
+function S = round(X, varargin)
+%ROUND (overloaded)
+%ROLMIPopt: delega ao builtin quando o argumento nao e rolmipvar.
+if ~isa(X, 'rolmipvar')
+    S = builtin('round', X, varargin{:});
+    return
+end
+
 %ROUND (overloaded)
 %
 % Update: Cristiano M. Agulhari

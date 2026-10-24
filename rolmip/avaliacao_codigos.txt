@@ -1,0 +1,40 @@
+## 1 Garagalos do original:
+
+Agora temos cache eeee
+
+1 -> gethash:
+Ok
+
+2 -> generate_homogeneous_exponents
+Cria um triangulo de pascal para determinar a quantidade de expoentes. Isso evita o uso do fatorial.
+ERRO: SE CRIAR COM ZERO VERTICES, O RESULTADO EH degree, O QUE NAO ESTA CORRETO.
+NO ROLMIP 3.3: DA ERRO DE RECURSAO INFINITA.
+Passou nos testes.
+	
+  2.1 -> rolmipopt_pascal
+  Ok
+
+  2.2 -> Qual a diferenca de generate_homogeneous_exponents e rolmipopt_exptable?
+  Ambos deram os mesmos resultados no teste exaustivo.
+  Ok
+
+3 -> opcode
+O comentário do MODIFICACOES.md da a entender que retirou o opcode, mas o operation_poly.m nao teve alteracao alguma entre versões.
+Pelo jeito, o opcode eh desligado quando do rolmipopt('codegen','off') (padrao), mas onde isso afeta o operation_poly.m?
+Abrir uma discussão se precisa do opcode, que soh eh util pro lmifiles.
+
+4 -> Homogenização por produtos repetidos pelo polinomio 1
+Foi drasticamente alterado; agora usa polylift (expansao multinomial exata com passada unica).
+A versao original agora eh homogenize_codegen
+O código parece ok, agora fazer os varios testes
+Testes: Da algum erro zoado quando vertice = 1 (ver o teste_homogenize.m, do Testes_Rolmips)
+
+
+5 -> Reconstrução completa de objetos em insert_simplex.m
+
+6 -> calccoefs
+
+7 -> Montagem incremental das LMIs
+
+8 -> Incompatibilidades com ferramentas atuais
+

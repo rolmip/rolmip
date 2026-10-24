@@ -1,4 +1,11 @@
 function Z = mtimes(X, Y)
+%ROLMIPopt: delega ao builtin quando o(s) argumento(s) nao sao rolmipvar
+%(robustez de despacho, necessaria no Octave).
+if ~isa(X, 'rolmipvar') && ~isa(Y, 'rolmipvar')
+    Z = builtin('mtimes', X, Y);
+    return
+end
+
 %MTIMES (overloaded)
 %
 % Author: Alexandre Felipe
@@ -75,6 +82,16 @@ function Z = mtimes(X, Y)
       % Why are you here?
       Z = X*Y;
   end
+  if isa(X,'rolmipvar') && ~isa(Y,'rolmipvar')
+      for k=1:numel(X.opcode)
+          if isempty(X.opcode{k}), Z.opcode{k} = ''; end
+      end
+  elseif isa(Y,'rolmipvar') && ~isa(X,'rolmipvar')
+      for k=1:numel(Y.opcode)
+          if isempty(Y.opcode{k}), Z.opcode{k} = ''; end
+      end
+  end
+  Z.dims = size(Z.data(1).value);
   % disp(['mtimes.m: ' Z.label ' has ' num2str(Z.vertices) ' vertices'])
   
 end
