@@ -52,7 +52,7 @@ if (strcmp(action,'insert') || strcmp(action,'i'))
                 opt = strcat(opt,',');
             end
 
-            if (isstr(varargin{cont}))
+            if (ischar(varargin{cont}))
                 opt = strcat(opt,'''');
                 opt = strcat(opt,varargin{cont});
                 opt = strcat(opt,'''');
@@ -116,8 +116,10 @@ if (strcmp(action,'insert') || strcmp(action,'i'))
     end
 
     if (~isempty(Term))
+        rolmipopt_require_opcodes(Term);
         Term = construct_lmi_terms(Term,vertices,'Term');
 
+        rolmipopt_require_opcodes(Term);
         update_variables(Term,vecpoly); %Update the variables and constants found in Term
 
         write_matrix_file(fid,Term,ineq); %Writes 'Term' in the file and sets the LMI

@@ -17,17 +17,33 @@ function [varargout] = coeffs(X)
 % 
 % Update: Cristiano Agulhari
 % 2017, Apr, 17
+%
+% Update: Cristiano Agulhari
+% 2026, Oct, 27
 
-for i = 1:length(X.data)
-    coefs{i} = X.data(i).value;
-    if (nargout == 2)
-        expon{i} = X.data(i).exponent;
+
+if (isa(X,'rolmipvar'))
+    if (length(X.data) == 1)
+        coefs = X.data(1).value;
+        expon = X.data(1).exponent;
+    else
+        for i = 1:length(X.data)
+            coefs{i} = X.data(i).value;
+            if (nargout == 2)
+                expon{i} = X.data(i).exponent;
+            end
+        end
     end
+else
+    coefs = X;
+    expon = [];
 end
 
 varargout{1} = coefs;
 if (nargout == 2)
     varargout{2} = expon;
 end
+
+
 
 end

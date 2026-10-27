@@ -34,7 +34,7 @@ else
         labelout = strcat('part_',strcat(char('a'+simpnum-1),strcat('_',polyin.label)));
     elseif (nargin == 2)
         aux = varargin{2};
-        if (isstr(aux)) %String
+        if (ischar(aux)) %String
             simpnum = 1;
             labelout = aux;
         else

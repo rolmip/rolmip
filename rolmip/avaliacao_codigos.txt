@@ -1,0 +1,100 @@
+## 1 Garagalos do original:
+
+Agora temos cache eeee
+
+1 -> gethash:
+Ok
+
+2 -> generate_homogeneous_exponents
+Cria um triangulo de pascal para determinar a quantidade de expoentes. Isso evita o uso do fatorial.
+ERRO: SE CRIAR COM ZERO VERTICES, O RESULTADO EH degree, O QUE NAO ESTA CORRETO.
+NO ROLMIP 3.3: DA ERRO DE RECURSAO INFINITA.
+Corrigido -> Passou nos testes.
+	
+  2.1 -> rolmipopt_pascal
+  Ok
+
+  2.2 -> Qual a diferenca de generate_homogeneous_exponents e rolmipopt_exptable?
+  Ambos deram os mesmos resultados no teste exaustivo.
+  Ok
+
+3 -> opcode
+O comentário do MODIFICACOES.md da a entender que retirou o opcode, mas o operation_poly.m nao teve alteracao alguma entre versões.
+Pelo jeito, o opcode eh desligado quando do rolmipopt('codegen','off') (padrao), mas onde isso afeta o operation_poly.m?
+Abrir uma discussão se precisa do opcode, que soh eh util pro lmifiles.
+
+4 -> Homogenização por produtos repetidos pelo polinomio 1
+Foi drasticamente alterado; agora usa polylift (expansao multinomial exata com passada unica).
+A versao original agora eh homogenize_codegen
+O código parece ok, agora fazer os varios testes
+Testes: Da algum erro zoado quando vertice = 1 (ver o teste_homogenize.m, do Testes_Rolmips)
+
+
+5 -> Reconstrução completa de objetos em insert_simplex.m
+--- insert_simplex não está pegando a variável pelo label. Mas creio que o erro esteja no rolmip.m, que o comando rolmip('getvar',label) não está pegando a variável. Não está mais armazenando as variávels no vecpoly?
+--- --- Não esta nem chamando o rolmip.m, acho que pode encerrar essa aplicação futuramente. Mas ainda não, pois ainda é utilizada para o lmifiles.
+
+6 -> calccoefs
+
+7 -> Montagem incremental das LMIs
+
+8 -> Incompatibilidades com ferramentas atuais
+
+
+* addsimplex.m -> Verificado e validado
+blkdiag.m
+* coeffs.m -> Uniformizada a implementação de coefs.m e coeffs.m
+* coefs.m -> Uniformizada a implementação de coefs.m e coeffs.m
+construct_lmi.m
+construct_lmi_terms_codegen.m
+construct_lmi_terms.m
+ctranspose.m
+diff.m
+discshift.m
+* discshift_old.m -> Removido
+display.m
+double.m
+eq.m
+evalpar.m
+exponents.m
+fork.m
+full.m
+ge.m
+get_degree.m
+gt.m
+homogeneous.m
+* homogenize_codegen.m -> Verificado e validado
+* homogenize.m -> Verificado e validado
+* homogenize_old.m -> Removido
+horzcat.m
+* insert_simplex.m -> Verificado e validado
+isnan.m
+le.m
+lt.m
+minus.m
+mpower.m
+mtimes.m
+ndims.m
+operation_poly_codegen.m
+operation_poly.m
+partial.m
+plus.m
+polya.m
+polylift.m
+product_poly.m
+rolmipvar.m
+round.m
+simpltransf.m
+size.m
+subsasgn.m
+subsref.m
+sum.m
+texify.m
+trace.m
+transpose.m
+uminus.m
+uplus.m
+value.m
+vertcat.m
+vertices.m
+
