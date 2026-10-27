@@ -56,7 +56,7 @@ display.m
 double.m
 eq.m
 evalpar.m
-exponents.m
+* exponents.m -> Agora implementada pela função coeffs.m
 fork.m
 full.m
 ge.m

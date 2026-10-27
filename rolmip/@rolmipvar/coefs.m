@@ -1,9 +1,9 @@
 function [varargout] = coefs(X)
 % This function returns the informations of the rolmipvar object poly.
 %
-% [c] coefs(poly) returns only the coefficients of the polynomial.
+% [c] = coefs(poly) returns only the coefficients of the polynomial.
 %
-% [c,expon] = vertices(poly) returns both the coefficients and the
+% [c,expon] = coefs(poly) returns both the coefficients and the
 % respective exponents of the polynomial. In this case, the i-th index
 % corresponds to the coefficient and exponent of the same monomial.
 %
