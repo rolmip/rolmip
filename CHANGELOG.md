@@ -1,5 +1,18 @@
 ## Opt 3.4 (unreleased)
 
+- Let `discshift` use the cddmex binary directly without MPT3, with a MATLAB fallback for a two-vertex simplex and one step.
+
+- Prune the internal enumeration of rate vertices in `diff` and handle fixed rates and single-vertex simplexes.
+
+- Add `rolmip_volume` for volume, coordinate projections and central cuts of quadratic regions, with optional 2D and 3D plots.
+- Support polynomial matrices on two-vertex simplexes in `rolmip_volume` for full regions and central cuts.
+
+- Extend `rolmip_verify` to inspect complete YALMIP constraint sets, including SDP, elementwise and equality residuals, with explicit unsupported/unevaluable results.
+
+- Add opt-in diagnostic sessions (`rolmip_check_begin`, `rolmip_check_report`, `rolmip_check_end`) with grouped issues and source locations; preserve constraint semantics.
+
+- Add optional polynomial diagnostics, coefficient LMI provenance and numerical certificate verification (`rolmip_check`, `rolmip_lmi`, `rolmip_verify`).
+
 - Correct derivative bounds handling, exponent validation, dimensions and export preflight.
 - Bound shared table cache storage and process polynomial products in chunks.
 - Add `rolmip_begin` / `[time,V,L] = rolmip_end(LMIs)` for construction timing and model statistics.

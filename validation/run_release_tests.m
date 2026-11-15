@@ -10,7 +10,13 @@ fprintf('MATLAB: %s\n',version);
 fprintf('YALMIP: %s\n',yalmip('version'));
 rolmipopt_test;
 rolmipopt_regression_test;
+test_diff_enumeration;
+test_discshift_backends;
 rolmipopt_memory_test;
 test_parser_timer;
+test_model_diagnostics;
+test_check_session;
+test_verify_constraints;
+test_rolmip_volume;
 fprintf('FINAL_RELEASE_CHECK_PASSED\n');
 end

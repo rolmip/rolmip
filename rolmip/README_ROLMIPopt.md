@@ -60,6 +60,13 @@ entre parênteses, GNU Octave 11, onde os ganhos são ainda maiores):
 
 ## Uso
 
+`discshift` usa o MPT3 quando disponível e consulta diretamente o binário
+`cddmex` quando o MPT3 está fora do caminho. Sem os dois, a chamada
+`discshift(P,1,bounds)` funciona para um simplex de dois vértices.
+`bounds` tem duas colunas, com os incrementos mínimos e máximos de cada
+coordenada baricêntrica por passo. O resultado reúne o polinômio atual e
+os futuros no mesmo simplex de trajetórias.
+
 Idêntico ao ROLMIP original — o manual do ROLMIP
 (`manual_rolmip.pdf`) continua válido. Exemplos:
 
@@ -236,3 +243,60 @@ são aninhadas. `rolmip_end` consome a medição e exige um novo `rolmip_begin`
 antes de outra chamada, inclusive se a inspeção das restrições falhar.
 Nenhum dos comandos limpa caches ou variáveis do YALMIP. Estatísticas só são
 calculadas quando suas saídas são solicitadas.
+
+## Diagnóstico e certificados
+
+As APIs opcionais `rolmip_check`, `[F,origem]=rolmip_lmi(P,'>=','Nome')`
+e `rolmip_verify(origem)` permitem inspecionar expressões, identificar as
+restrições por monômio e verificar numericamente os certificados retornados.
+Veja [DIAGNOSTICS_3_4.md](DIAGNOSTICS_3_4.md) para interfaces, exemplos,
+tolerâncias e limites. A semântica dos operadores existentes é preservada.
+
+
+Para o diagnóstico automático de um trecho inteiro, use `rolmip_check_begin`
+antes de construir as LMIs e `relatorio=rolmip_check_end` antes de resolver.
+`rolmip_check_report` consulta os problemas sem encerrar a coleta. O relatório
+agrupa problemas e aponta arquivo/linha de origem; `relatorio.has_errors`
+pode ser usado pelo programa para decidir se deve chamar o solver. Veja os
+limites de cobertura na seção de sessões de `DIAGNOSTICS_3_4.md`.
+
+
+Após resolver, `r=rolmip_verify(LMIs,'solver',solucao)` verifica diretamente
+todas as restrições reais SDP, elemento a elemento e igualdades do conjunto,
+sem exigir nomes ou a criação de origens. Consulte `r.constraints_passed`,
+`r.violated_indices`, `r.unevaluable_indices` e `r.worst`. Tipos não suportados
+impedem a aprovação global. A avaliação em pontos continua exigindo `origem`;
+a interface direta e seus limites estão na seção 5 de `DIAGNOSTICS_3_4.md`.
+
+## Volume de regiões quadráticas
+
+`[V,info] = rolmip_volume(P)` calcula o volume da região definida por
+`x'*P*x <= 1`. Para uma célula de matrizes de vértice ou um `rolmipvar`
+afim em um simplex, a região é a interseção dos elipsoides dos vértices.
+Os coeficientes devem ser numéricos e definidos positivos. Use `value(P)`
+para obter os coeficientes após a síntese.
+
+`'subspace',[1 3]` calcula a área da projeção em `(x1,x3)`.
+Acrescente `'reduction','cut'` para fixar as coordenadas omitidas em zero.
+`'plot',1` desenha a fronteira em duas ou três dimensões.
+Use `'color',[0.55 0.28 0.70]` ou um nome de cor do MATLAB para mudar o
+desenho. Em 2D, `'drawVertices',1` sobrepõe os contornos pontilhados dos
+elipsoides individuais, com a mesma projeção ou o mesmo corte.
+Em 3D, `'FaceAlpha',0.4` torna a superfície semitransparente. O padrão é 1
+(opaca) e o valor 0 deixa a superfície invisível.
+Para desenhar por conta própria, use `plot(info.contour(1,:),info.contour(2,:))`
+com a saída de uma chamada 2D. O campo `contour` fecha a curva de `boundaryX`
+e também é retornado com `'plot',0`.
+O volume de um único elipsoide é calculado por fórmula. Para interseções,
+a área usa quadratura angular e os volumes a partir de 3D usam Monte Carlo.
+A projeção de uma interseção com eliminação de coordenadas requer YALMIP
+e um solver cônico. Execute `help rolmip_volume` no MATLAB para ver os
+exemplos 2D e 3D.
+
+Para um `rolmipvar` polinomial em um simplex de dois vértices, estão
+disponíveis a região completa e o corte. A cada direção, a função usa
+subdivisão em base de Bernstein para limitar o máximo da forma quadrática
+em todo o intervalo. `info.radialMaxRelativeGap` informa a maior diferença
+relativa entre esses limites numéricos. O erro de integração é separado
+desse valor. Os contornos pontilhados continuam mostrando os elipsoides
+dos vértices quando `'drawVertices',1` está ativo.
