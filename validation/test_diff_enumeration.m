@@ -53,8 +53,8 @@ end
 function V = rateVertices(bounds)
 n = size(bounds,1);
 P = rolmipvar(eye(n),'rates',n,1);
-C = coeffs(diff(P,bounds));
-V = [C{1:n:end}];
+derivative = struct(diff(P,bounds));
+V = [derivative.data(1:n:end).value];
 end
 
 function assertError(call,identifier)

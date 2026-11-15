@@ -4,20 +4,21 @@ bernstein = [];
 polynomialDegree = 0;
 if isa(P,'rolmipvar')
     degree = get_degree(P);
+    poly = struct(P);
     if all(degree == 0)
-        matrices = coeffs(P);
+        matrices = {poly.data.value};
     elseif isscalar(degree) && degree == 1
-        [~,exponents] = coeffs(P);
-        vertexCount = numel(exponents{1}{1});
+        vertexCount = poly.vertices;
         matrices = cell(1,vertexCount);
         for i = 1:vertexCount
             alpha = zeros(1,vertexCount);
             alpha(i) = 1;
             matrices{i} = evalpar(P,{alpha});
         end
-    elseif isscalar(degree) && degree > 1 && isequal(struct(P).vertices,2)
+    elseif isscalar(degree) && degree > 1 && isequal(poly.vertices,2)
         polynomialDegree = degree;
-        [matrices,exponents] = coeffs(P);
+        matrices = {poly.data.value};
+        exponents = {poly.data.exponent};
     else
         error('ROLMIP:VolumeDegree', ...
             'Use a constant or affine P on one simplex, or a polynomial P on a two-vertex simplex.');

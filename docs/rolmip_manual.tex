@@ -396,17 +396,21 @@ There are two ways to access the coefficients and exponents of a polynomial:
   \[
     \mbox{\mcode{>> Mi = coeffs(poly);}}
   \]
-  which returns a cell structure containing all the coefficients of the monomials from the \mcode{rolmipvar} variable \mcode{poly}.
-  In this case, the output contains only the monomials, and not the respective exponents, which can be obtained through the command
+  which returns the coefficient matrices of \mcode{poly}. When the polynomial
+  has several monomials, the coefficients are returned in a cell array.
+  The corresponding exponents can be obtained through the command
   \[
    \mbox{\mcode{>> expMi = exponents(poly);}}
   \]
-  The output variable \mcode{expMi} is structured as
+  For several monomials, the entry
   \[
    \mbox{\mcode{expMi\{index\}}}
   \]
-  where \mcode{index} corresponds to the coefficient stored in \mcode{Mi{index}}. The structure of \mcode{expMi{index}} is similar
-  to the \mcode{exponent} component shown in Table~\ref{tab_struct_rolmipvar}.
+  contains the exponents of the monomial whose coefficient is stored in
+  \mcode{Mi\{index\}}. Each entry has the structure of the \mcode{exponent}
+  component shown in Table~\ref{tab_struct_rolmipvar}. For a single monomial,
+  \mcode{coeffs} returns its coefficient matrix directly and
+  \mcode{exponents} returns one cell per simplex.
 
 
  \end{itemize}

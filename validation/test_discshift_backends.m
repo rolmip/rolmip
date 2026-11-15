@@ -52,15 +52,15 @@ for k = 1:size(cases,1)
     end
     steps = eta+1;
     assert(numel(coordinates) == steps);
-    firstCoefficients = coeffs(coordinates{1});
-    count = numel(firstCoefficients);
+    firstCoordinate = struct(coordinates{1});
+    count = numel(firstCoordinate.data);
     if ~isempty(expectedCount)
         assert(count == expectedCount);
     end
     trajectory = zeros(n*steps,count);
     for t = 1:steps
-        coefficients = coeffs(coordinates{t});
-        A = [coefficients{:}];
+        coordinate = struct(coordinates{t});
+        A = [coordinate.data.value];
         assert(size(A,2) == count);
         assert(all(abs(sum(A,1)-1) < 1e-10) && min(A(:)) >= -1e-10);
         rows = (t-1)*n+(1:n);

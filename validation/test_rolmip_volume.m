@@ -8,6 +8,14 @@ assert(abs(rolmip_volume(P1) - 4*pi/3) < 1e-12);
 assert(abs(rolmip_volume(P1,'subspace',3) - 2*sqrt(2)) < 1e-12);
 assert(abs(rolmip_volume(P1,'subspace',3,'reduction','cut') - 2) < 1e-12);
 
+% A single stored monomial also occurs in constant and one-vertex inputs.
+P = rolmipvar(P1,'constant');
+assert(abs(rolmip_volume(P) - 4*pi/3) < 1e-12);
+P = rolmipvar({P1},'constantOnSimplex',3,0);
+assert(abs(rolmip_volume(P) - 4*pi/3) < 1e-12);
+P = rolmipvar({P1},'oneVertex',1,1);
+assert(abs(rolmip_volume(P) - 4*pi/3) < 1e-12);
+
 % The two ellipsoids separately project to the unit disk on (x2,x1).
 % Their intersection projects to x2^2+2*x1^2<=1, since the two
 % minimizing lifts are opposite. A shared lift of zero attains the bound.
