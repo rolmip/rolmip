@@ -18,12 +18,21 @@ function LMIs = construct_lmi_terms(varargin)
 %  * com rolmipopt('codegen','on') executa-se o codigo original
 %    (CONSTRUCT_LMI_TERMS_CODEGEN), que preserva opcodes para o LMIFILES.
 
+collecting=rolmip_check_session('active') && nargin>=2 && ...
+    ischar(varargin{end}) && any(strcmp(varargin{end},{'>','<','>=','<='}));
+diagnosticid=[];
 if strcmp(rolmipopt('codegen'), 'on')
-    rolmipopt_require_opcodes(varargin{1});
+    try
+        rolmipopt_require_opcodes(varargin{1});
+    catch diagnosticerror
+        if collecting,rolmip_check_session('failure',diagnosticerror,varargin{end},[]);end
+        rethrow(diagnosticerror);
+    end
     LMIs = construct_lmi_terms_codegen(varargin{:});
     return
 end
 
+try
 Term = varargin{1};
 if (~iscell(Term))
     Termaux = Term;
@@ -167,6 +176,9 @@ end
 
 %Terceiro passo: constroi as LMIs
 if (~isempty(ineq))
+    if collecting
+        diagnosticid=rolmip_check_session('blocks',Term,ineq);
+    end
     LMIs = [];
     nr = size(Term,1);
     nc = size(Term,2);
@@ -230,4 +242,10 @@ else
     rolmip('setvar',LMIs);
 end
 
+catch diagnosticerror
+    if collecting
+        rolmip_check_session('failure',diagnosticerror,varargin{end},diagnosticid);
+    end
+    rethrow(diagnosticerror);
+end
 return
