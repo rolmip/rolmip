@@ -17,6 +17,7 @@ end
 % dotbounds = [x y; w z]. 
 % If the variable is a multi-simplex, then dotbounds{i} is the vector with
 % the variation rates bounds of the parameters in the i-th simplex.
+% Without MPT, the rate vertices are enumerated using a pruned search.
 %
 % [dotpoly] = diff(poly,labelout,dotbounds) also defines the label of
 % the output polynomial as the string labelout. If not informed, the 
@@ -236,52 +237,127 @@ if (exist('Polyhedron')) %If MPT Toolbox is installed
     P = Polyhedron('A',A,'b',b,'Ae',Ae,'be',be);
     H = P.V';
 else
-    
-    
-    N = size(dotbounds,1);
-    H = [];
-    for i=1:N
-        Y{i}=dotbounds(i,:)';
-        Z{i}=dotbounds';
-        Z{i}(:,i)=[];
-        
-        
-        C=[];
-        for j=1:N-1
-            C=[C; kron(ones(1,2^(j-1)),kron(Z{i}(:,j)',ones(1,2^(N-1-j))))];
-        end
-        if size(C,1)==1
-            V=-C;
+    H = rateVertices(dotbounds);
+end
+
+return
+
+function H = rateVertices(bounds)
+% Enumerate the vertices of a box intersected with sum(rate) = 0.
+validateattributes(bounds,{'numeric'}, ...
+    {'2d','nonempty','real','finite','ncols',2},'diff','dotbounds');
+bounds = full(double(bounds));
+if any(bounds(:,1) > bounds(:,2))
+    error('ROLMIP:DiffRateBounds','Each lower rate limit must be at most its upper limit.');
+end
+
+n = size(bounds,1);
+magnitude = max(abs(bounds(:)));
+scale = 1;
+if magnitude > realmax/(4*n)
+    % Avoid overflow in sums while preserving the binary scale of the inputs.
+    [~,exponent] = log2(magnitude);
+    scale = pow2(1,exponent-1);
+    bounds = bounds/scale;
+end
+lower = bounds(:,1);
+upper = bounds(:,2);
+minSum = compensatedSum(lower);
+maxSum = compensatedSum(upper);
+if minSum >= 0 || maxSum <= 0
+    % Equality at either extreme leaves a single feasible corner. Permit
+    % rounding in a cancelling sum (e.g. fixed rates 0.1, 0.2, -0.3).
+    if minSum >= 0
+        point = lower;
+        residual = minSum;
+    else
+        point = upper;
+        residual = maxSum;
+    end
+    if abs(residual) > 4*eps(1)*sum(abs(point))
+        error('ROLMIP:DiffInfeasibleRates','The rate limits are incompatible with a zero sum.');
+    end
+    H = scale*point;
+    return
+end
+
+varying = find(lower < upper);
+m = numel(varying);
+fixedSum = compensatedSum(lower(lower == upper));
+% Use the scale of the terms actually added during the search. Large
+% cancelling fixed rates should not prevent pruning a small variable box.
+searchScale = max(abs([fixedSum;lower(varying);upper(varying)]));
+pruneTolerance = 8*m*eps(searchScale);
+H = zeros(n,16);
+count = 0;
+for f = 1:m
+    free = varying(f);
+    others = varying;
+    others(f) = [];
+    tailMin = [flipud(cumsum(flipud(lower(others)))); 0];
+    tailMax = [flipud(cumsum(flipud(upper(others)))); 0];
+    point = lower;
+    point(free) = 0;
+
+    % Depth-first search with one state per level. Traverse free
+    % coordinates and bounds in the same order as the original search.
+    prefix = zeros(m,1);
+    prefix(1) = fixedSum;
+    nextBound = ones(m-1,1);
+    depth = 1;
+    while depth > 0
+        if depth == m
+            point(free) = 0;
+            rate = -compensatedSum(point);
+            if rate >= lower(free) && rate <= upper(free) && ...
+                    (f == 1 || (rate > lower(free) && rate < upper(free)))
+                % Box corners also arise with any other free coordinate.
+                % Emit them only in the first pass.
+                point(free) = rate;
+                if count == size(H,2)
+                    H(:,2*count) = 0;
+                end
+                count = count + 1;
+                H(:,count) = point;
+            end
+            depth = depth - 1;
+        elseif nextBound(depth) > 2
+            nextBound(depth) = 1;
+            depth = depth - 1;
         else
-            V=-sum(C);
-        end
-        for j=1:2^(N-1)
-            if V(j) >= Y{i}(1) && V(j) <= Y{i}(2)%if V(j) >= Y{i}(1) & V(j) <= Y{i}(2)
-                c=C(:,j);
-                col = [c(1:i-1,1); V(j); c(i:end,1)];
-                
-                if i ==1;
-                    H=[H col];
-                end
-                count=0;
-                for r=1:size(H,2);
-                    v=H(:,r);
-                    % Preserve the rounding policy of the selected local ROLMIP base.
-                    if all(round((v-col)*1e8)*1e-8 == 0);
-                        count=count+1;
-                    end
-                end
-                
-                if count ==0;
-                    H=[H col];
-                end
-                
+            coordinate = others(depth);
+            value = bounds(coordinate,nextBound(depth));
+            nextBound(depth) = nextBound(depth) + 1;
+            total = prefix(depth) + value;
+            if total+tailMin(depth+1)+lower(free) <= pruneTolerance && ...
+                    total+tailMax(depth+1)+upper(free) >= -pruneTolerance
+                point(coordinate) = value;
+                prefix(depth+1) = total;
+                depth = depth + 1;
             end
         end
     end
 end
+if count == 0
+    error('ROLMIP:DiffInfeasibleRates','No feasible rate vertices could be computed.');
+end
+H = scale*H(:,1:count);
 
-return
+function total = compensatedSum(values)
+% Neumaier summation keeps the small terms in a sequence that cancels.
+total = 0;
+correction = 0;
+for k = 1:numel(values)
+    value = values(k);
+    next = total + value;
+    if abs(total) >= abs(value)
+        correction = correction + ((total-next) + value);
+    else
+        correction = correction + ((value-next) + total);
+    end
+    total = next;
+end
+total = total + correction;
 
 %function [indhash,base] = create_hash_table(vertices,degree)
 function [jump,exptable] = create_hash_table(vertices,degree)
