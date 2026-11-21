@@ -1,15 +1,6 @@
-clear;
-
-A1 = eye(2);
-A2 = 2*eye(2);
-A3 = 3*eye(2);
-A4 = 4*eye(2);
-
-A{1} = {[1 0 0 0],A1};
-A{2} = {[1 0 0 0],A2};
-A{3} = {[0 1 0 0],A3};
-A{4} = {[0 0 0 1],A4};
-poly = rolmipvar(A,'A',4,1);
-
-dotpoly = diff(poly,'dpoly',[-1 2; -3 4; -8 6; -5 9])
-
+% Example 19. Time derivative on a three-vertex simplex.
+A = {{[1 0 0],eye(2)}, {[0 1 0],2*eye(2)}, {[0 0 1],3*eye(2)}};
+poly = rolmipvar(A,'A',3,1);
+dotpoly = diff(poly,'dpoly',repmat([-1 1],3,1));
+ex19_coefficients = coeffs(dotpoly);
+ex19_rates = cellfun(@(M) M(1,1),ex19_coefficients(1:3:end));

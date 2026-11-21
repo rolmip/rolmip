@@ -1,4 +1,11 @@
 function Z = mpower(X, n)
+%ROLMIPopt: delega ao builtin quando o(s) argumento(s) nao sao rolmipvar
+%(robustez de despacho, necessaria no Octave).
+if ~isa(X, 'rolmipvar')
+    Z = builtin('mpower', X, n);
+    return
+end
+
 %MPOWER (overloaded)
 %
 % Author: Alexandre Felipe

@@ -1,4 +1,11 @@
 function [varargout] = subsref(poly,S)
+%ROLMIPopt: delega ao builtin quando o argumento nao e rolmipvar
+%(robustez de despacho, necessaria no Octave).
+if ~isa(poly, 'rolmipvar')
+    [varargout{1:max(nargout,1)}] = builtin('subsref', poly, S);
+    return
+end
+
 %Overloads subsref
 
 if (strcmp(S.type,'()'))
@@ -25,7 +32,7 @@ if (strcmp(S.type,'()'))
             totalsimpl(cont) = (factorial(N+deg-1)/(factorial(deg)*factorial(N-1)));
             numelem = numelem*totalsimpl(cont);
         end
-        if ((isstr(S.subs{cont})) && (strcmp(S.subs{cont},':')))
+        if ((ischar(S.subs{cont})) && (strcmp(S.subs{cont},':')))
             colon = [colon cont];
         end
     end

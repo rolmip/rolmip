@@ -1,4 +1,11 @@
 function X=transpose(atual)
+%ROLMIPopt: delega ao builtin quando o(s) argumento(s) nao sao rolmipvar
+%(robustez de despacho, necessaria no Octave).
+if ~isa(atual, 'rolmipvar')
+    X = builtin('transpose', atual);
+    return
+end
+
 %TRANSPOSE (overloaded)
 %
 % Author: Alexandre Felipe
@@ -16,6 +23,9 @@ end
 for i = 1:length(atual.data)
     X.data(i).value = transpose(atual.data(i).value);
     X.opcode{i} = strcat(pre,atual.opcode{i},aft, char(39));
+    if isempty(atual.opcode{i}), X.opcode{i} = ''; end
 end
 X.label = strcat(pre,atual.label,aft, char(39));
 
+
+X.dims = size(X.data(1).value);

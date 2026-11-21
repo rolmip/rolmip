@@ -1,4 +1,11 @@
 function varargout = diff(varargin)
+%ROLMIPopt: delega ao builtin quando o argumento nao e rolmipvar
+%(robustez de despacho, necessaria no Octave).
+if nargin >= 1 && ~isa(varargin{1}, 'rolmipvar') && ~isstruct(varargin{1})
+    [varargout{1:max(nargout,1)}] = builtin('diff', varargin{:});
+    return
+end
+
 % Procedure to calculate the time-derivate of a time-varying
 % parameter-dependent matrix.
 %
@@ -10,6 +17,7 @@ function varargout = diff(varargin)
 % dotbounds = [x y; w z]. 
 % If the variable is a multi-simplex, then dotbounds{i} is the vector with
 % the variation rates bounds of the parameters in the i-th simplex.
+% Without MPT, the rate vertices are enumerated using a pruned search.
 %
 % [dotpoly] = diff(poly,labelout,dotbounds) also defines the label of
 % the output polynomial as the string labelout. If not informed, the 
@@ -36,7 +44,7 @@ else
         dotbounds = varargin{2};
         labelout = strcat('dot_',polyin.label);
     elseif (nargin == 3)
-        if (isstr(varargin{2}))
+        if (ischar(varargin{2}))
             dotbounds = varargin{3};
             labelout = varargin{2};
         else
@@ -58,15 +66,6 @@ if (~iscell(dotbounds))
     clear dotbounds;
     dotbounds{1} = aux;
     clear aux;
-end
-
-%Verify if 0 \in dotbounds{i}
-for i=1:length(dotbounds)
-    for cont=1:size(dotbounds{i},1)
-        if (dotbounds{i}(cont,1)*dotbounds{i}(cont,2) > 0)
-            error('The bounds for the derivatives must contain the value 0 in order to generate a compact polytope');
-        end
-    end
 end
 
 if (sum(polyin.vertices) == 0)
@@ -96,6 +95,8 @@ for contsimplex=1:numsimplexes
 end  
 
 [jump,exptable] = create_hash_table(vertices,degree);
+
+docodes = strcmp(rolmipopt('codegen'), 'on'); %ROLMIPopt
 
 % Compose the polynomial structure of the derivative
 poly.label = labelout;
@@ -145,22 +146,27 @@ for cont=1:length(polyin.data)
                             poly.data(indresul).value = poly.data(indresul).value + val*H{contsimplex}(contexp,contderiv)*polyin.data(cont).value;
                             poly.data(indresul).exponent = exponents;
                             
-                             %Update the opcode and opcodein
-                            if ~((indresul > length(poly.opcodein)) || (isempty(poly.opcodein{indresul})))
-                                %If the opcodein already exists
-                                poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'+');
+                             %Update the opcode and opcodein (ROLMIPopt: apenas com codegen on)
+                            if (docodes)
+                                if ~((indresul > length(poly.opcodein)) || (isempty(poly.opcodein{indresul})))
+                                    %If the opcodein already exists
+                                    poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'+');
+                                else
+                                    poly.opcodein{indresul} = [];
+                                end
+                                if ((indresul > length(poly.opcode)) || (isempty(poly.opcode{indresul})))
+                                    poly.opcode{indresul} = strcat(labelout,strcat('#D',num2str(indresul)));
+                                end
+                                if (val~=1)
+                                    poly.opcodein{indresul} = strcat(strcat(poly.opcodein{indresul},num2str(val)),'*');
+                                end
+                                poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'H[');
+                                poly.opcodein{indresul} = strcat(strcat(strcat(strcat(poly.opcodein{indresul},strcat(strcat(num2str(contexp),','),num2str(contderiv))),']#H'),num2str(contsimplex)),'*');
+                                poly.opcodein{indresul} = strcat(poly.opcodein{indresul},polyin.opcode{cont});
                             else
-                                poly.opcodein{indresul} = [];
+                                poly.opcode{indresul} = '';
+                                poly.opcodein{indresul} = '';
                             end
-                            if ((indresul > length(poly.opcode)) || (isempty(poly.opcode{indresul})))
-                                poly.opcode{indresul} = strcat(labelout,strcat('#D',num2str(indresul)));
-                            end
-                            if (val~=1)
-                                poly.opcodein{indresul} = strcat(strcat(poly.opcodein{indresul},num2str(val)),'*');
-                            end
-                            poly.opcodein{indresul} = strcat(poly.opcodein{indresul},'H[');
-                            poly.opcodein{indresul} = strcat(strcat(strcat(strcat(poly.opcodein{indresul},strcat(strcat(num2str(contexp),','),num2str(contderiv))),']#H'),num2str(contsimplex)),'*');
-                            poly.opcodein{indresul} = strcat(poly.opcodein{indresul},polyin.opcode{cont});
                             
                             isok = false;
                             if (isempty(indderivhomog))
@@ -231,51 +237,127 @@ if (exist('Polyhedron')) %If MPT Toolbox is installed
     P = Polyhedron('A',A,'b',b,'Ae',Ae,'be',be);
     H = P.V';
 else
-    
-    
-    N = size(dotbounds,1);
-    H = [];
-    for i=1:N
-        Y{i}=dotbounds(i,:)';
-        Z{i}=dotbounds';
-        Z{i}(:,i)=[];
-        
-        
-        C=[];
-        for j=1:N-1
-            C=[C; kron(ones(1,2^(j-1)),kron(Z{i}(:,j)',ones(1,2^(N-1-j))))];
-        end
-        if size(C,1)==1
-            V=-C;
+    H = rateVertices(dotbounds);
+end
+
+return
+
+function H = rateVertices(bounds)
+% Enumerate the vertices of a box intersected with sum(rate) = 0.
+validateattributes(bounds,{'numeric'}, ...
+    {'2d','nonempty','real','finite','ncols',2},'diff','dotbounds');
+bounds = full(double(bounds));
+if any(bounds(:,1) > bounds(:,2))
+    error('ROLMIP:DiffRateBounds','Each lower rate limit must be at most its upper limit.');
+end
+
+n = size(bounds,1);
+magnitude = max(abs(bounds(:)));
+scale = 1;
+if magnitude > realmax/(4*n)
+    % Avoid overflow in sums while preserving the binary scale of the inputs.
+    [~,exponent] = log2(magnitude);
+    scale = pow2(1,exponent-1);
+    bounds = bounds/scale;
+end
+lower = bounds(:,1);
+upper = bounds(:,2);
+minSum = compensatedSum(lower);
+maxSum = compensatedSum(upper);
+if minSum >= 0 || maxSum <= 0
+    % Equality at either extreme leaves a single feasible corner. Permit
+    % rounding in a cancelling sum (e.g. fixed rates 0.1, 0.2, -0.3).
+    if minSum >= 0
+        point = lower;
+        residual = minSum;
+    else
+        point = upper;
+        residual = maxSum;
+    end
+    if abs(residual) > 4*eps(1)*sum(abs(point))
+        error('ROLMIP:DiffInfeasibleRates','The rate limits are incompatible with a zero sum.');
+    end
+    H = scale*point;
+    return
+end
+
+varying = find(lower < upper);
+m = numel(varying);
+fixedSum = compensatedSum(lower(lower == upper));
+% Use the scale of the terms actually added during the search. Large
+% cancelling fixed rates should not prevent pruning a small variable box.
+searchScale = max(abs([fixedSum;lower(varying);upper(varying)]));
+pruneTolerance = 8*m*eps(searchScale);
+H = zeros(n,16);
+count = 0;
+for f = 1:m
+    free = varying(f);
+    others = varying;
+    others(f) = [];
+    tailMin = [flipud(cumsum(flipud(lower(others)))); 0];
+    tailMax = [flipud(cumsum(flipud(upper(others)))); 0];
+    point = lower;
+    point(free) = 0;
+
+    % Depth-first search with one state per level. Traverse free
+    % coordinates and bounds in the same order as the original search.
+    prefix = zeros(m,1);
+    prefix(1) = fixedSum;
+    nextBound = ones(m-1,1);
+    depth = 1;
+    while depth > 0
+        if depth == m
+            point(free) = 0;
+            rate = -compensatedSum(point);
+            if rate >= lower(free) && rate <= upper(free) && ...
+                    (f == 1 || (rate > lower(free) && rate < upper(free)))
+                % Box corners also arise with any other free coordinate.
+                % Emit them only in the first pass.
+                point(free) = rate;
+                if count == size(H,2)
+                    H(:,2*count) = 0;
+                end
+                count = count + 1;
+                H(:,count) = point;
+            end
+            depth = depth - 1;
+        elseif nextBound(depth) > 2
+            nextBound(depth) = 1;
+            depth = depth - 1;
         else
-            V=-sum(C);
-        end
-        for j=1:2^(N-1)
-            if V(j) >= Y{i}(1) && V(j) <= Y{i}(2)%if V(j) >= Y{i}(1) & V(j) <= Y{i}(2)
-                c=C(:,j);
-                col = [c(1:i-1,1); V(j); c(i:end,1)];
-                
-                if i ==1;
-                    H=[H col];
-                end
-                count=0;
-                for r=1:size(H,2);
-                    v=H(:,r);
-                    if roundn(v-col,-8) == zeros(N,1);
-                        count=count+1;
-                    end
-                end
-                
-                if count ==0;
-                    H=[H col];
-                end
-                
+            coordinate = others(depth);
+            value = bounds(coordinate,nextBound(depth));
+            nextBound(depth) = nextBound(depth) + 1;
+            total = prefix(depth) + value;
+            if total+tailMin(depth+1)+lower(free) <= pruneTolerance && ...
+                    total+tailMax(depth+1)+upper(free) >= -pruneTolerance
+                point(coordinate) = value;
+                prefix(depth+1) = total;
+                depth = depth + 1;
             end
         end
     end
 end
+if count == 0
+    error('ROLMIP:DiffInfeasibleRates','No feasible rate vertices could be computed.');
+end
+H = scale*H(:,1:count);
 
-return
+function total = compensatedSum(values)
+% Neumaier summation keeps the small terms in a sequence that cancels.
+total = 0;
+correction = 0;
+for k = 1:numel(values)
+    value = values(k);
+    next = total + value;
+    if abs(total) >= abs(value)
+        correction = correction + ((total-next) + value);
+    else
+        correction = correction + ((value-next) + total);
+    end
+    total = next;
+end
+total = total + correction;
 
 %function [indhash,base] = create_hash_table(vertices,degree)
 function [jump,exptable] = create_hash_table(vertices,degree)
@@ -329,11 +411,16 @@ end
 return
 
 function index = gethash(exponent,exptable,jump)
+% ROLMIPopt: indexacao combinatoria O(v) (ROLMIPOPT_INDEX) no lugar da
+% busca linear com find/histc/repmat da versao original.
 index = 0;
-for contsimplex=1:(length(exponent)) 
+for contsimplex=1:(length(exponent))
     if (length(exptable{contsimplex}) > 0)
-        [i,j] = find(exptable{contsimplex} - repmat(exponent{contsimplex},size(exptable{contsimplex},1),1) == 0);
-        index = index + (find(histc(i,1:size(exptable{contsimplex},1)) == size(exptable{contsimplex},2)) - 1)*jump(contsimplex);
+        e = exponent{contsimplex};
+        if (length(e) < size(exptable{contsimplex},2))
+            e = zeros(1,size(exptable{contsimplex},2)); %convencao [0]
+        end
+        index = index + (rolmipopt_index(e) - 1)*jump(contsimplex);
     end
 end
 index = index + 1;

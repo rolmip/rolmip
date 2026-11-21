@@ -8,6 +8,13 @@ The main objective of ROLMIP is to provide an easy interface for the user, start
 
 The details of ROLMIP can be found in the [User Manual](./docs/manual_rolmip.pdf).
 
+## Opt 3.4 development branch
+
+This branch contains the Opt 3.4 changes under review; it is not a published
+release. See [usage and compatibility](rolmip/README_ROLMIPopt.md) and
+[validation results and tests](VALIDATION_3_4.md). In particular, enable
+`rolmipopt('codegen','on')` before constructing expressions for `lmifiles` export.
+
 ## Download
 
 Download ROLMIP [here](https://github.com/rolmip/rolmip/archive/refs/tags/3.3.zip)!

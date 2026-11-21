@@ -1,20 +1,8 @@
-clear;
-
-A1 = eye(2);
-A2 = 2*eye(2);
-A3 = 3*eye(2);
-A4 = 4*eye(2);
-A5 = 5*eye(2);
-A6 = 6*eye(2);
-
-A{1} = {[0 0 0],A1};
-A{2} = {[1 0 0],A2};
-A{3} = {[1 1 0],A3};
-A{4} = {[0 2 0],A4};
-A{5} = {[1 1 1],A5};
-A{6} = {[0 0 3],A6};
-poly = rolmipvar(A,'A',[-2 4; 3 6; 1 8]);
-
-dotpoly = diff(poly,'dpoly',[-2 4; 3 6; 1 8],[-1 5; -3 2; -7 3])
-
-
+% Example 21. Time derivative with bounded physical parameters.
+A = {{[0 0 0],eye(2)},   {[1 0 0],2*eye(2)}, ...
+     {[1 1 0],3*eye(2)}, {[0 2 0],4*eye(2)}, ...
+     {[1 1 1],5*eye(2)}, {[0 0 3],6*eye(2)}};
+bounds = [-2 4;3 6;1 8];
+dotbounds = [-1 5;-3 2;-7 3];
+poly = rolmipvar(A,'A',bounds);
+dotpoly = diff(poly,'dpoly',bounds,dotbounds);

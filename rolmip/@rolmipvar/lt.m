@@ -1,13 +1,11 @@
 function LMIs = lt(lhs, rhs)
 %LT (overloaded less than)
 %
-% Author: Alexandre Felipe
-% 2014, Dec, 8  LMIs = set([]);
-  LMIs = [];
-  h = homogenize(lhs, rhs);
-%   if(isa(rhs, 'rolmipvar'))
-    for i = 1:length(h{1}.data)
-      LMIs = LMIs + (h{1}.data(i).value < h{2}.data(i).value);
-    end
-%   end
+%ROLMIPopt: o YALMIP moderno nao aceita desigualdades estritas (erro).
+%A restricao e construida com <= e um aviso e emitido (desative com
+%warning('off','ROLMIPopt:strict')). Para margem estrita, some um termo
+%eps*eye ao polinomio.
+  warning('ROLMIPopt:strict', ...
+      'Desigualdade estrita convertida em nao estrita (<=).');
+  LMIs = le(lhs, rhs);
 end

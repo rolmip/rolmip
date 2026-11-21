@@ -1,0 +1,99 @@
+{
+  "total": {
+    "cases": 420,
+    "github_sum_medians_s": 12.421116,
+    "opt_sum_medians_s": 7.3326,
+    "speedup": 1.6939579412486703,
+    "reduction_percent": 40.96665710230868,
+    "median_case_speedup": 1.6392628048749174,
+    "opt_faster": 420
+  },
+  "groups": [
+    {
+      "domain": "c",
+      "metric": "hinf",
+      "cases": 105,
+      "github_sum_medians_s": 2.193137,
+      "opt_sum_medians_s": 1.317133,
+      "speedup": 1.6650839360945326,
+      "reduction_percent": 39.94296753919158,
+      "median_case_speedup": 1.6170288882926391,
+      "opt_faster": 105
+    },
+    {
+      "domain": "c",
+      "metric": "h2",
+      "cases": 105,
+      "github_sum_medians_s": 2.531782,
+      "opt_sum_medians_s": 1.441789,
+      "speedup": 1.7560003578887065,
+      "reduction_percent": 43.052403405980456,
+      "median_case_speedup": 1.6599073349780373,
+      "opt_faster": 105
+    },
+    {
+      "domain": "d",
+      "metric": "hinf",
+      "cases": 105,
+      "github_sum_medians_s": 3.397074,
+      "opt_sum_medians_s": 2.096324,
+      "speedup": 1.6204909164804677,
+      "reduction_percent": 38.29030512729484,
+      "median_case_speedup": 1.58330500985657,
+      "opt_faster": 105
+    },
+    {
+      "domain": "d",
+      "metric": "h2",
+      "cases": 105,
+      "github_sum_medians_s": 4.299123,
+      "opt_sum_medians_s": 2.477354,
+      "speedup": 1.7353688653297024,
+      "reduction_percent": 42.37536353344623,
+      "median_case_speedup": 1.6536481225668718,
+      "opt_faster": 105
+    }
+  ],
+  "fastest": {
+    "id": "c_n5_v4_i1_h2_p0_r0_q0_z1",
+    "domain": "c",
+    "n": 5,
+    "N": 4,
+    "i": 1,
+    "metric": "h2",
+    "degree": 0,
+    "rho": 0,
+    "relax": 0,
+    "zeroD": true,
+    "V": 16,
+    "L": 37,
+    "github_median_s": 0.041761,
+    "opt34_median_s": 0.011429,
+    "speedup": 3.653950476857118,
+    "github_min_s": 0.039005,
+    "github_max_s": 0.055004,
+    "opt34_min_s": 0.011141,
+    "opt34_max_s": 0.011837
+  },
+  "slowest": {
+    "id": "d_n4_v2_i2_h2_p0_r0_q0_z0",
+    "domain": "d",
+    "n": 4,
+    "N": 2,
+    "i": 2,
+    "metric": "h2",
+    "degree": 0,
+    "rho": 0,
+    "relax": 0,
+    "zeroD": false,
+    "V": 11,
+    "L": 26,
+    "github_median_s": 0.015658,
+    "opt34_median_s": 0.014116,
+    "speedup": 1.1092377444035135,
+    "github_min_s": 0.015021,
+    "github_max_s": 0.020305,
+    "opt34_min_s": 0.012897,
+    "opt34_max_s": 0.016042
+  }
+}

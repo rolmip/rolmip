@@ -1,0 +1,42 @@
+\section{Condições implementadas}
+Escreva $P=P(\alpha)$, $P_+=P(\alpha_+)$ e $\eta=\gamma^2$.
+No caso congelado, $P_+=P$ e $\dot P=0$.
+Minimiza-se $\eta$ sujeito a $P\succ0$ e às condições abaixo, impostas por
+positividade dos coeficientes polinomiais. Trata-se de uma condição suficiente,
+que pode ser conservadora. Não se afirma obter a norma robusta exata.
+
+Para $H_\infty$ contínuo:
+\[
+\begin{bmatrix}
+-A^TP-PA-\dot P&-PB&-C^T\\
+-B^TP&\eta I&-D^T\\-C&-D&I
+\end{bmatrix}\succ0.
+\]
+Para $H_\infty$ discreto:
+\[
+\begin{bmatrix}
+P&0&A^TP_+&C^T\\0&\eta I&B^TP_+&D^T\\
+P_+A&P_+B&P_+&0\\C&D&0&I
+\end{bmatrix}\succ0.
+\]
+Para $H_2$ contínuo, somente nas variantes $D=0$:
+\[
+\begin{bmatrix}-A^TP-PA-\dot P&C^T\\C&I\end{bmatrix}\succ0,
+\qquad \eta\geq\operatorname{tr}(B^TPB).
+\]
+Para $H_2$ discreto:
+\[
+\begin{bmatrix}P&A^TP_+&C^T\\P_+A&P_+&0\\C&0&I\end{bmatrix}\succ0,
+\qquad\eta\geq\operatorname{tr}(B^TP_+B+D^TD).
+\]
+No caso com parâmetros variantes, o resultado $H_2$ é interpretado como
+limite uniforme da energia da resposta impulsiva, somada pelos canais de
+entrada, para trajetórias admissíveis; não como norma de uma única função de
+transferência LTI. Para parâmetros congelados, recupera-se a interpretação
+usual de custo $H_2$. Para $H_\infty$, o certificado limita o ganho induzido
+$L_2$ (ou $\ell_2$) com estado inicial nulo.
+
+Foi subtraída margem $10^{-6}I$ de $P$ e dos blocos matriciais; as restrições
+$\eta\geq0$ e de traço são não estritas. Nos ensaios Pólya, multiplicam-se
+os polinômios correspondentes pela soma das coordenadas do simplex antes de
+extrair os coeficientes. Esse fator vale um no domínio físico.

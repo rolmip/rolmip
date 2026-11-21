@@ -1,4 +1,11 @@
 function [varargout] = subsasgn(poly, S, value)
+%ROLMIPopt: delega ao builtin quando o argumento nao e rolmipvar
+%(robustez de despacho, necessaria no Octave).
+if ~isa(poly, 'rolmipvar')
+    varargout{1} = builtin('subsasgn', poly, S, value);
+    return
+end
+
 
 
 if (strcmp(S.type,'()'))

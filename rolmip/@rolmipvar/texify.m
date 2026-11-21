@@ -33,7 +33,7 @@ if (iscell(varargin{nargin}))
     simplexnames = varargin{nargin};
     numsimplexes = length(simplexnames);
 else
-    if (isstr(varargin{nargin})) %Multi-simplex input
+    if (ischar(varargin{nargin})) %Multi-simplex input
         multisimplex = 1;
         simplexnames = varargin{nargin};
     else

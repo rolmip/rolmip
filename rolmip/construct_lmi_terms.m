@@ -10,6 +10,10 @@ function LMIs = construct_lmi_terms(varargin)
 %                    new label of the LMI. If param=='Term', return the
 %                    homogeneized variable Term.
 
+collecting=rolmip_check_session('active') && nargin>=2 && ...
+    ischar(varargin{end}) && any(strcmp(varargin{end},{'>','<','>=','<='}));
+diagnosticid=[];
+try
 Term = varargin{1};
 if (~iscell(Term))
     %In this case, Term is a polynomial and not a matrix with polynomials
@@ -194,6 +198,9 @@ end
 
 %Third step: construct the LMIs
 if (~isempty(ineq))
+    if collecting
+        diagnosticid=rolmip_check_session('blocks',Term,ineq);
+    end
     LMIs = [];
     
     for contdata=1:length(Term{1,1}.data)
@@ -207,14 +214,16 @@ if (~isempty(ineq))
         end
 
         if (strcmp(ineq,'>'))
-            LMIs = [LMIs; T>0];
+            constraint = T>0;
         elseif (strcmp(ineq,'<'))
-            LMIs = [LMIs; T<0];
+            constraint = T<0;
         elseif (strcmp(ineq,'>='))
-            LMIs = [LMIs; T>=0];
+            constraint = T>=0;
         elseif (strcmp(ineq,'<='))
-            LMIs = [LMIs; T<=0];
+            constraint = T<=0;
         end
+        rolmip_warn_trivial_lmi(constraint,contdata);
+        LMIs = [LMIs; constraint];
     end
 elseif (strcmp(label,'Term'))
     LMIs = Term;
@@ -247,6 +256,12 @@ else
 end
 
 
+catch diagnosticerror
+    if collecting
+        rolmip_check_session('failure',diagnosticerror,varargin{end},diagnosticid);
+    end
+    rethrow(diagnosticerror);
+end
 return
 
 

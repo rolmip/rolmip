@@ -1,17 +1,21 @@
 function [varargout] = insert_simplex(varargin)
-% Procedure to insert a new multisimplex variable in an already existent
-% polynomial variable
+% Procedimento para inserir um novo simplexo em uma variavel polinomial ja
+% existente.
 %
 % [poly] = insert_simplex(poly,vertices)
-% Inserts, in the variable poly, the multisimplex with the given number of
-% vertices, which corresponds to a row vector.
+% Insere, na variavel poly, os simplexos com os numeros de vertices dados
+% (vetor linha).
 %
 % [poly] = insert_simplex(label,vertices)
-% Inserts the new multisimplex in the polynomial with the given label.
+% Insere os novos simplexos no polinomio com o rotulo dado.
+%
+%ROLMIPopt: a insercao e feita por anexacao direta dos expoentes (grau
+%zero, convencao [0] do ROLMIP), sem desmontar e reconstruir o polinomio
+%pelo construtor como na versao original. Como os novos simplexos tem um
+%unico monomio (grau zero), a ordem canonica dos dados nao se altera.
 
 if (nargin ~= 2)
     error('Input error. Type ''help insert_simplex'' for more details');
-    return
 end
 
 if ischar(varargin{1})
@@ -19,33 +23,26 @@ if ischar(varargin{1})
     poly = rolmip('getvar',label);
     if isempty(poly)
         error('The informed label does not correspond to any polynomial');
-        return
+    end
+    if (~isa(poly,'rolmipvar'))
+        poly = rolmipvar(poly);
     end
 else
     poly = varargin{1};
-    label = poly.label;
 end
 
 vertices = varargin{2};
-
-newvertices = [poly.vertices vertices];
-newdegrees = [];
-for cont=1:length(poly.vertices)
-    newdegrees = [newdegrees sum(poly.data(1).exponent{cont})];
-end
-newdegrees = [newdegrees zeros(1,length(vertices))];
-
 numsimplex = length(poly.data(1).exponent);
-for cont=1:length(poly.data)
-    for contsimplex=1:numsimplex
-        M{cont}{contsimplex} = poly.data(cont).exponent{contsimplex};
+numnew = length(vertices);
+
+if (numnew > 0)
+    for cont=1:length(poly.data)
+        for continsert=1:numnew
+            poly.data(cont).exponent{numsimplex+continsert} = 0;
+        end
     end
-    for continsert=1:length(vertices)
-        M{cont}{numsimplex+continsert} = [0];
-    end
-    M{cont}{numsimplex+length(vertices)+1} = poly.data(cont).value;
+    poly.vertices = [poly.vertices vertices(:).'];
 end
-poly = rolmipvar(M,label,newvertices,newdegrees);
 
 varargout{1} = poly;
 

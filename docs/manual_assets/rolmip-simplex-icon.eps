@@ -1,0 +1,44 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%Title: ROLMIP Simplex icon
+%%Creator: Vector conversion of output/rolmip-logo/rolmip-simplex-icon.svg
+%%BoundingBox: 28 28 484 372
+%%HiResBoundingBox: 28.5 28.5 483.5 371.5
+%%EndComments
+gsave
+0 400 translate 1 -1 scale
+/M {moveto} bind def /L {lineto} bind def /N {newpath} bind def
+/dark {16 255 div 43 255 div 80 255 div setrgbcolor} bind def
+/invertclip {
+  0 0 M 512 0 L 512 400 L 0 400 L closepath eoclip N
+} bind def
+/cutdisc { N 0 360 arc closepath invertclip } bind def
+
+% Matrix brackets.
+dark 27 setlinewidth 0 setlinejoin 0 setlinecap
+N 98 42 M 42 42 L 42 358 L 98 358 L stroke
+N 414 42 M 470 42 L 470 358 L 414 358 L stroke
+
+% The SVG mask is binary. Clip out each gap as a vector path.
+gsave
+7 setlinewidth
+N 256 70 M 256 236 L 118 320 L strokepath invertclip
+N 256 236 M 394 320 L strokepath invertclip
+256 70 30 cutdisc
+118 320 27 cutdisc
+394 320 27 cutdisc
+
+70 255 div 166 255 div 171 255 div setrgbcolor
+N 256 70 M 118 320 L 256 236 L closepath fill
+27 255 div 100 255 div 115 255 div setrgbcolor
+N 256 70 M 256 236 L 394 320 L closepath fill
+dark
+N 118 320 M 394 320 L 256 236 L closepath fill
+grestore
+
+% Simplex vertices.
+25 255 div 125 255 div 132 255 div setrgbcolor
+N 256 70 26 0 360 arc closepath fill
+N 118 320 23 0 360 arc closepath fill
+N 394 320 23 0 360 arc closepath fill
+grestore
+%%EOF
