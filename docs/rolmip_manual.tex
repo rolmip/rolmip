@@ -398,6 +398,9 @@ There are two ways to access the coefficients and exponents of a polynomial:
   \]
   which returns the coefficient matrices of \mcode{poly}. When the polynomial
   has several monomials, the coefficients are returned in a cell array.
+  To force a cell array for any polynomial degree, including degree zero, use
+  \mcode{Mi = coeffs(poly,'cell');}. The first coefficient is then accessed
+  with \mcode{Mi\{1\}}, even when the polynomial has a single monomial.
   The corresponding exponents can be obtained through the command
   \[
    \mbox{\mcode{>> expMi = exponents(poly);}}

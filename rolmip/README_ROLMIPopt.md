@@ -244,6 +244,35 @@ antes de outra chamada, inclusive se a inspeção das restrições falhar.
 Nenhum dos comandos limpa caches ou variáveis do YALMIP. Estatísticas só são
 calculadas quando suas saídas são solicitadas.
 
+## Extração de coeficientes e desigualdades constantes
+
+Use `coeffs(P,'cell')` quando o código acessa os coeficientes com chaves.
+A opção também está disponível em `coefs`. A chamada padrão retorna o
+coeficiente diretamente quando há um único monômio e uma célula quando
+há vários. Com `'cell'`, ambas as saídas têm uma entrada por monômio,
+inclusive no grau zero.
+
+```matlab
+W = rolmipvar(2,2,'W','sym',2,0);
+Y = rolmipvar(2,2,'Y','sym',2,0);
+cw = coeffs(W,'cell');
+cy = coeffs(Y,'cell');
+LMIs = [cw{1} eye(2);eye(2) cy{1}] >= 1e-6*eye(4);
+[c,e] = coeffs(W,'cell'); % c{1} e e{1} descrevem o mesmo monômio
+```
+
+O aviso `ROLMIP:TrivialLMI` identifica o monômio quando uma comparação
+construída pelo ROLMIP resulta em constantes. Ele abrange `>=`, `<=`,
+os construtores de LMIs e os coeficientes constantes aceitos por
+`rolmip_lmi`, com `codegen` ligado ou desligado. Um lado numérico é
+normal quando o outro contém variáveis de decisão. Para desativar o aviso,
+use `warning('off','ROLMIP:TrivialLMI')`.
+
+Se uma expressão já virou `double`, uma comparação MATLAB seguida de
+concatenação direta em um objeto YALMIP ocorre fora do ROLMIP. O aviso
+alcança as comparações recebidas pelo ROLMIP. A extração com `'cell'`
+preserva os coeficientes simbólicos ao usar chaves.
+
 ## Diagnóstico e certificados
 
 As APIs opcionais `rolmip_check`, `[F,origem]=rolmip_lmi(P,'>=','Nome')`

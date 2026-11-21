@@ -219,14 +219,16 @@ if (~isempty(ineq))
         end
 
         if (strcmp(ineq,'>'))
-            LMIs = [LMIs, T>=0];
+            constraint = T>=0;
         elseif (strcmp(ineq,'<'))
-            LMIs = [LMIs, T<=0];
+            constraint = T<=0;
         elseif (strcmp(ineq,'>='))
-            LMIs = [LMIs, T>=0];
+            constraint = T>=0;
         elseif (strcmp(ineq,'<='))
-            LMIs = [LMIs, T<=0];
+            constraint = T<=0;
         end
+        rolmip_warn_trivial_lmi(constraint,contdata);
+        LMIs = [LMIs, constraint];
     end
 elseif (strcmp(label,'Term'))
     LMIs = Term;

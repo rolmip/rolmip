@@ -9,7 +9,9 @@ function LMIs = le(lhs, rhs)
         id=rolmip_check_session('pair',h{1},h{2},'<=');
     end
     for i = 1:length(h{1}.data)
-        LMIs = LMIs + (h{1}.data(i).value <= h{2}.data(i).value);
+        constraint = h{1}.data(i).value <= h{2}.data(i).value;
+        rolmip_warn_trivial_lmi(constraint,i);
+        LMIs = LMIs + constraint;
     end
   catch err
     if collecting,rolmip_check_session('failure',err,'<=',id);end

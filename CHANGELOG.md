@@ -1,5 +1,8 @@
 ## Opt 3.4 (unreleased)
 
+- Add `coeffs(P,'cell')` and `coefs(P,'cell')` for coefficient and exponent cells independent of monomial count.
+- Warn with `ROLMIP:TrivialLMI` when ROLMIP constructs a constant coefficient inequality without decision variables.
+
 - Let `discshift` use the cddmex binary directly without MPT3, with a MATLAB fallback for a two-vertex simplex and one step.
 
 - Prune the internal enumeration of rate vertices in `diff` and handle fixed rates and single-vertex simplexes.

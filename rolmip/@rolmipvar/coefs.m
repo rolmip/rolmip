@@ -1,4 +1,4 @@
-function [varargout] = coefs(X)
+function [varargout] = coefs(X,varargin)
 % This function returns the informations of the rolmipvar object poly.
 %
 % [c] = coefs(poly) returns only the coefficients of the polynomial.
@@ -12,27 +12,6 @@ function [varargout] = coefs(X)
 % Update: Cristiano Agulhari
 % 2026, Oct, 27
 
-if (isa(X,'rolmipvar'))
-    if (length(X.data) == 1)
-        coefs = X.data(1).value;
-        expon = X.data(1).exponent;
-    else
-        for i = 1:length(X.data)
-            coefs{i} = X.data(i).value;
-            if (nargout == 2)
-                expon{i} = X.data(i).exponent;
-            end
-        end
-    end
-else
-    coefs = X;
-    expon = [];
+% COEFS accepts the same optional 'cell' format as COEFFS.
+[varargout{1:nargout}] = coeffs(X,varargin{:});
 end
-
-varargout{1} = coefs;
-if (nargout == 2)
-    varargout{2} = expon;
-end
-
-
-return

@@ -45,6 +45,7 @@ for k=1:numel(p.data)
         if min(eig(full(M)))<0
             error('ROLMIP:ConstantInfeasible','%s: constant coefficient is not positive semidefinite.',tagtext);
         end
+        rolmip_warn_trivial_lmi(M,k);
         kind='constant_psd';
     else
         C=tag(M>=0,tagtext);

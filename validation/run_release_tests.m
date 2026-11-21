@@ -10,6 +10,7 @@ fprintf('MATLAB: %s\n',version);
 fprintf('YALMIP: %s\n',yalmip('version'));
 rolmipopt_test;
 rolmipopt_regression_test;
+test_coefficient_safety;
 test_diff_enumeration;
 test_discshift_backends;
 rolmipopt_memory_test;
